@@ -7,7 +7,6 @@ BIN:=booksmart
 
 # code directories
 SUBCODEDIRS:=./net 
-CODEDIRS:=. ${SUBCODEDIRS}
 
 # compatibility layer (and other libraries)
 INCDIRS:=./compat
@@ -35,17 +34,16 @@ INCFLAGS+=-I${DIR}
 ALLFLAGS:=${CFLAGS} ${DEPFLAGS} ${INCFLAGS} ${OPT}
 
 # get all c files
-CFILES!= find ${CODEDIRS} -name "*.c"
+CFILES!= find ${SUBCODEDIRS} -name "*.c"
+CFILES+=main.c
 
 # get all h files
-HFILES!= find ${CODEDIRS} -name "*.h"
+HFILES!= find ${SUBCODEDIRS} -name "*.h"
 
 # get residual build files 
 OFILES:= ${CFILES:S/.c/.o/g}
 DFILES:= ${CFILES:S/.c/.d/g}
 GCHFILES:= ${HFILES:S/.h/.h.gch/g}
-
-
 
 .SUFFIXES: .o .c
 
