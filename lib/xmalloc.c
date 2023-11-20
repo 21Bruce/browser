@@ -48,3 +48,17 @@ xzallocarray(size_t nmemb, size_t size)
 
     return ptr;
 }
+
+void *
+xzalloc(size_t size)
+{
+    void *ptr;
+
+    ptr = calloc(1, size);
+    if (ptr == NULL) {
+        errx(ENOMEM, "Ran out of memory");
+        exit(ENOMEM);
+    }
+
+    return ptr;
+}
