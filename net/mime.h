@@ -4,6 +4,6 @@
 /*
  * conver cstr to canonical mime format
  */
-void bksmt_cstrmime(char *str);
+void bksmt_cstrmime(char *);
 
 #endif

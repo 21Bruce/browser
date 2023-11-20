@@ -28,20 +28,20 @@ toupper(char c)
 /*
  * bksmt_cstrmime - converts string to canonical 
  * MIME form
+ * Example: "accept-encoding" -> "Accept-Encoding"
+ *
+ * => modifies str in place
  */
 void
 bksmt_cstrmime(char *str)
 {
     int sf = 1;
+    size_t i;
 
-    assert(str != NULL); 
-
-    for(size_t i = 0; str[i] != (char)0; i++) {
+    for(i = 0; str[i] != 0; i++) {
         if (str[i] == '-') {
             sf = 1;     
-            continue;
-        }
-        if (sf && islower(str[i])) {
+        } else if (sf && islower(str[i])) {
             str[i] = toupper(str[i]);
             sf = 0;
         }
