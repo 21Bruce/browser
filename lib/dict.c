@@ -32,6 +32,8 @@ bksmt_dict_regrow(struct bksmt_dict *dict)
     unsigned long nbidx;
     size_t i, resize = (dict->nbuckets) * HASHRESIZE;
 
+    assert(dict != NULL);
+
     /*
      * Loop through all elements, rehash them into new 
      * hash map, then free them
@@ -111,6 +113,9 @@ bksmt_dict_free(struct bksmt_dict *dict)
 {
     struct bksmt_dict_elem *c, *ctmp;
     size_t i;
+
+    assert(dict != NULL);
+
     for (i = 0; i < dict->nbuckets; i++) {
         for (c = dict->buckets[i]; c != NULL; c = ctmp) {
             ctmp = c->nxt;

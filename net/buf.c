@@ -26,6 +26,7 @@ void
 bksmt_buf_chain_add(struct bksmt_buf_chain *chain, struct bksmt_buf *buf)
 {
     struct bksmt_buf_chain *nelem;
+
     assert(chain != NULL);
 
     if (chain->buf == NULL) {
@@ -43,6 +44,7 @@ void
 bksmt_buf_chain_release(struct bksmt_buf_chain *chain)
 {
     struct bksmt_buf_chain *c, *ctmp;
+
     assert(chain != NULL);
 
     for (c = chain; c != NULL; c = ctmp) {

@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <err.h>
+
 #define ENOMEM -2
 #define EOVERF -3
 
