@@ -3,4 +3,6 @@
 
 unsigned long djb2_hash(unsigned char *);
 
+unsigned long sdbm_hash(unsigned char *);
+
 #endif
