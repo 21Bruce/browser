@@ -13,3 +13,15 @@ djb2_hash(unsigned char *str)
     }
     return hash;
 }
+
+unsigned long
+sdbm_hash(unsigned char *str)
+{
+    unsigned long hash = 0;
+    int c;
+
+    while ((c = *str++)) {
+        hash = c + (hash << 6) + (hash << 16) - hash;
+    }
+    return hash;
+}
