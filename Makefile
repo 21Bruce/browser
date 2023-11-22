@@ -6,7 +6,7 @@
 BIN:=booksmart
 
 # code directories
-SUBCODEDIRS:=./net ./lib
+SUBCODEDIRS:=./net ./lib ./http
 
 # compatibility layer (and other libraries)
 INCDIRS:=./compat
