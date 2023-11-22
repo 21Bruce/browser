@@ -16,7 +16,7 @@ int bksmt_conn_send(struct bksmt_conn *, struct bksmt_buf *, size_t);
 
 int bksmt_conn_recv(struct bksmt_conn *, struct bksmt_buf *, size_t);
 
-int bksmt_conn_recv_chain(struct bksmt_conn *, struct bksmt_buf_chain *, size_t, time_t);
+int bksmt_conn_recv_chain(struct bksmt_conn *, struct bksmt_buf_chain *, size_t);
 
 void bksmt_conn_close(struct bksmt_conn *);
 

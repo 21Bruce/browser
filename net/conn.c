@@ -173,3 +173,47 @@ abort1:
 abort:
     return CONN_ERROR;
 }
+
+int 
+bksmt_conn_recv_chain(struct bksmt_conn *c, 
+        struct bksmt_buf_chain *ch, size_t nrecv)
+{
+    unsigned char *buf;
+    size_t nbytes, written;
+
+
+    if(c->lazyf && !CONN_ISUDP(c->type) && connect(c->sd, &(c->addr), c->addrlen))
+        goto abort;
+
+    buf = xmalloc(nrecv * sizeof *buf);
+
+    written = 0;
+    while((written < nrecv) && (nbytes = read(c->sd, 
+                    buf + written, nrecv - written))) {
+        if (nbytes <= 0)
+            goto abort1;
+        written += nbytes;
+    }
+
+    for (; ch != NULL; ch = ch->nxt) {
+        assert(nrecv <= ch->buf->end - ch->buf->start);
+        nbytes = bksmt_buf_write(b, buf, nrecv * sizeof *buf);
+        if (nbytes != nrecv)
+            goto abort1;
+    }
+    free(buf);
+    return CONN_OK;
+
+abort1:
+    free(buf);    
+abort:
+    return CONN_ERROR;
+}
+
+void
+bksmt_conn_close(struct bksmt_conn *c)
+{
+    assert(c != NULL);
+    close(c->sd);
+    free(c);
+}

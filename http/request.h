@@ -2,6 +2,8 @@
 #define __BKSMT_HEADER_H__
 
 #include "../lib/dict.h"
+#include "../lib/buf.h"
+#include "../net/conn.h"
 #include "http.h"
 
 #include <stdlib.h>
