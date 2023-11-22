@@ -1,7 +1,7 @@
 #ifndef __BKSMT_CONN_H__
 #define __BKSMT_CONN_H__
 
-#include "buf.h"
+#include "../lib/buf.h"
 
 #include <sys/socket.h>
 #include <netdb.h>

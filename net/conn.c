@@ -1,5 +1,5 @@
 #include "conn.h"
-#include "buf.h"
+#include "../lib/buf.h"
 #include "../lib/xmalloc.h"
 
 #include <unistd.h>

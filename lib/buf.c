@@ -1,5 +1,5 @@
 #include "buf.h"
-#include "../lib/xmalloc.h"
+#include "xmalloc.h"
 
 #include <stdlib.h>
 #include <string.h>
