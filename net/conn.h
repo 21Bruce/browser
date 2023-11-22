@@ -2,15 +2,19 @@
 #define __BKSMT_CONN_H__
 
 #include "buf.h"
+
+#include <sys/socket.h>
+#include <netdb.h>
+#include <arpa/inet.h>
 #include <time.h>
 
 struct bksmt_conn;
 
 int bksmt_conn_open(char *, char *, char *, int, int, struct bksmt_conn **);
 
-int bksmt_conn_send(struct bksmt_conn *, struct bksmt_buf *, size_t, time_t);
+int bksmt_conn_send(struct bksmt_conn *, struct bksmt_buf *, size_t);
 
-int bksmt_conn_recv(struct bksmt_conn *, struct bksmt_buf *, size_t, time_t);
+int bksmt_conn_recv(struct bksmt_conn *, struct bksmt_buf *, size_t);
 
 int bksmt_conn_recv_chain(struct bksmt_conn *, struct bksmt_buf_chain *, size_t, time_t);
 
@@ -33,4 +37,28 @@ void bksmt_conn_close(struct bksmt_conn *);
 #define CONN_DNS  0x2
 #define CONN_FLAG_SET(flags, flag) flags |= flag
 
+/*
+ * Implementation specific struct, DO NOT TOUCH
+ */
+struct bksmt_conn {
+    /*
+     * address and len
+     */
+    struct sockaddr_in addr;
+    socklen_t addrlen;
+    /*
+     * lazy flag
+     */
+    int lazyf;
+    /*
+     * socket descriptor
+     */
+    int sd;
+    /*
+     * conn type
+     */
+    int type;
+};
+
 #endif
+
