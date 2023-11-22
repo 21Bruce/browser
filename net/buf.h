@@ -2,14 +2,17 @@
 #define __BKSMT_BUF_H__
 
 #include <stdlib.h>
+#include <assert.h>
 
 struct bksmt_buf {
 #define BUF_FILE 1
 #define BUF_MMEM 2 
 #define BUF_MMAP 3 
     int type;
-    int fd;
-    unsigned char *mbuf;
+    union bksmt_buf_inf {
+        int fd;
+        unsigned char *mbuf;
+    } inf;
     /*
      * buffer is in [start, end-1]
      * positions of the inf
@@ -18,14 +21,14 @@ struct bksmt_buf {
     int end; 
 };
 
-#define BKSMT_BUF_ISFILE(buf)  (buf)->etype &  BUF_FILE
-#define BKSMT_BUF_SETFILE(buf) (buf)->etype &= BUF_FILE 
-
-#define BKSMT_BUF_ISMMEM(buf)  (buf)->etype &  BUF_MMEM
-#define BKSMT_BUF_SETMMEM(buf) (buf)->etype &= BUF_MMEM 
-
-#define BKSMT_BUF_ISMMAP(buf)  (buf)->etype &  BUF_MMAP
-#define BKSMT_BUF_SETMMAP(buf) (buf)->etype &= BUF_MMAP 
+#define BKSMT_BUF_ATTACH(buf, typev, intv, startp, endp) \
+    do {                                                 \
+        assert(buf != NULL);                             \
+        buf->type   = typev;                             \
+        buf->inf    = (union bksmt_buf_inf) intv;        \
+        buf->start  = startp;                            \
+        buf->end    = endp;                              \
+    } while (0)
 
 struct bksmt_buf *bksmt_buf_init();
 void              bksmt_buf_free(struct bksmt_buf *);
