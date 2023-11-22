@@ -197,7 +197,7 @@ bksmt_conn_recv_chain(struct bksmt_conn *c,
 
     for (; ch != NULL; ch = ch->nxt) {
         assert(nrecv <= ch->buf->end - ch->buf->start);
-        nbytes = bksmt_buf_write(b, buf, nrecv * sizeof *buf);
+        nbytes = bksmt_buf_write(ch->buf, buf, nrecv * sizeof *buf);
         if (nbytes != nrecv)
             goto abort1;
     }
