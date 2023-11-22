@@ -1,15 +1,21 @@
 #ifndef __BKSMT_BUF_H__
 #define __BKSMT_BUF_H__
 
+#include <stdlib.h>
+
 struct bksmt_buf {
-#define BUF_FILE 0x1
-#define BUF_MMEM 0x2
-#define BUF_MMAP 0x4
-    int etype;
+#define BUF_FILE 1
+#define BUF_MMEM 2 
+#define BUF_MMAP 3 
+    int type;
     int fd;
-    unsigned char *buf;
+    unsigned char *mbuf;
+    /*
+     * buffer is in [start, end-1]
+     * positions of the inf
+     */
     int start;
-    int end;
+    int end; 
 };
 
 #define BKSMT_BUF_ISFILE(buf)  (buf)->etype &  BUF_FILE
@@ -23,6 +29,8 @@ struct bksmt_buf {
 
 struct bksmt_buf *bksmt_buf_init();
 void              bksmt_buf_free(struct bksmt_buf *);
+int               bksmt_buf_read(struct bksmt_buf *, unsigned char *, size_t);
+int               bksmt_buf_write(struct bksmt_buf *, unsigned char *, size_t);
 
 struct bksmt_buf_chain {
     struct bksmt_buf *buf;
@@ -32,6 +40,7 @@ struct bksmt_buf_chain {
 struct bksmt_buf_chain *bksmt_buf_chain_init();
 
 void bksmt_buf_chain_add(struct bksmt_buf_chain *, struct bksmt_buf *);
+
 
 void bksmt_buf_chain_release(struct bksmt_buf_chain *);
 
