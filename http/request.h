@@ -58,19 +58,12 @@ struct bksmt_http_req_header {
 
 struct bksmt_http_req {
     struct bksmt_http_req_header  header;
-    struct bksmt_dict            *cookies;
     struct bksmt_buf             *body;
-    struct bksmt_conn            *conn;
 }; 
 
 struct bksmt_http_req *bksmt_http_req_init();
-int bksmt_http_req_parse(bksmt_buf *buf, struct bksmt_http_req **req);
-int bksmt_http_req_send(struct bksmt_http_req *req);
-void bksmt_http_req_close(struct bksmt_http_req *req);
-
-/* http request status codes */
-#define HTTP_OK     0
-#define HTTP_ERROR  1
-#define HTTP_BUSY   2
+int bksmt_http_req_parse(bksmt_buf *, struct bksmt_http_req **);
+int bksmt_http_req_send(struct bksmt_http_req *, struct bksmt_conn *);
+void bksmt_http_req_free(struct bksmt_http_req *);
 
 #endif
