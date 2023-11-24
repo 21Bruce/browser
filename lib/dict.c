@@ -5,23 +5,12 @@
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <sys/queue.h>
 
 #define HASHINIT 100
 #define HASHREFILL 0.8
 #define HASHRESIZE 2
 #define HASHCAP(dict) ((float)(dict->nelem)/(float)(dict->nbuckets))
-
-struct bksmt_dict_elem {
-    char                    *key;
-    char                    *val;
-    struct bksmt_dict_elem  *nxt;
-};
-
-struct bksmt_dict {
-    size_t                   nbuckets;
-    struct bksmt_dict_elem **buckets;  
-    size_t                   nelem;
-};
 
 static void bksmt_dict_regrow(struct bksmt_dict *);
 
@@ -63,6 +52,7 @@ bksmt_dict_init()
     ret->nbuckets = HASHINIT;
     ret->buckets = xzallocarray(ret->nbuckets, sizeof *(ret->buckets));
     ret->nelem = 0;
+    LIST_INIT(&(ret->elems));
     return ret;
 }
 
@@ -86,12 +76,12 @@ void
 bksmt_dict_set(struct bksmt_dict *dict, char *key, char *val)
 {
     struct bksmt_dict_elem *c, *nc;
-    unsigned long bidx; 
+    unsigned long bidx;
     
     assert(dict != NULL);
 
     if (HASHCAP(dict) >= HASHREFILL) 
-        bksmt_dict_regrow(dict);    
+        bksmt_dict_regrow(dict);
 
     bidx = djb2_hash(key) % dict->nbuckets;
     for (c = dict->buckets[bidx]; c != NULL; c = c->nxt) {
@@ -106,6 +96,30 @@ bksmt_dict_set(struct bksmt_dict *dict, char *key, char *val)
     nc->val = strdup(val);
     nc->nxt = dict->buckets[bidx];
     dict->buckets[bidx] = nc;
+    dict->nelem += 1;
+    LIST_INSERT_HEAD(&(dict->elems), nc, elist);
+}
+
+void
+bksmt_dict_clear(struct bksmt_dict *dict, char *key)
+{
+    struct bksmt_dict_elem *c, *p = NULL;
+    unsigned long bidx;
+ 
+    assert(dict != NULL);
+    bidx = djb2_hash(key) % dict->nbuckets;
+    for (c = dict->buckets[bidx]; c != NULL && strcmp(key, c->key) != 0; c = c->nxt) {
+        p = c;
+    }
+
+    if (c != NULL) {
+        if (p != NULL)
+            p->nxt = c->nxt;
+        free(c->key);
+        free(c->val);
+        LIST_REMOVE(c, elist);
+        free(c);
+    }
 }
 
 void
