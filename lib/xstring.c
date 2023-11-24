@@ -7,15 +7,14 @@
 
 #define ENOMEM -1
 
-char *
-xasprintf(const char * restrict format, ...)
+void
+xasprintf(char **ret, const char * restrict format, ...)
 {
     va_list ap;
     int stat;
-    char *ret;
 
     va_start(ap, format);
-    stat = vasprintf(&ret, format, ap);
+    stat = vasprintf(ret, format, ap);
     va_end(ap);
 
     if (stat == -1) {
@@ -23,8 +22,6 @@ xasprintf(const char * restrict format, ...)
         exit(ENOMEM);
     } 
 
-    return ret;
 }
-
 
 
