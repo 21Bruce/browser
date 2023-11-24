@@ -33,7 +33,7 @@ struct bksmt_pctenc_lut_entry {
 };
 
 char *
-cstr_pctenc(char *raw)
+bksmt_cstrpctenc(char *raw)
 {
     int i, j;
     char *ret = strdup(raw);
