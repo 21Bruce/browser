@@ -117,7 +117,7 @@ bksmt_conn_send(struct bksmt_conn *c, struct bksmt_buf *b,
     if(c->lazyf && !CONN_ISUDP(c->type) && connect(c->sd, &(c->addr), c->addrlen))
         goto abort;
 
-    buf = xmalloc(nsend * sizeof *buf);
+    buf = xmallocarray(nsend, sizeof *buf);
     nbytes = bksmt_buf_read(b, buf, nsend * sizeof *buf);
     if (nbytes != nsend)
         goto abort1;
@@ -151,7 +151,7 @@ bksmt_conn_recv(struct bksmt_conn *c, struct bksmt_buf *b,
     if(c->lazyf && !CONN_ISUDP(c->type) && connect(c->sd, &(c->addr), c->addrlen))
         goto abort;
 
-    buf = xmalloc(nrecv * sizeof *buf);
+    buf = xmallocarray(nrecv, sizeof *buf);
 
     written = 0;
     while((written < nrecv) && (nbytes = read(c->sd, 
@@ -185,7 +185,7 @@ bksmt_conn_recv_chain(struct bksmt_conn *c,
     if(c->lazyf && !CONN_ISUDP(c->type) && connect(c->sd, &(c->addr), c->addrlen))
         goto abort;
 
-    buf = xmalloc(nrecv * sizeof *buf);
+    buf = xmallocarray(nrecv, sizeof *buf);
 
     written = 0;
     while((written < nrecv) && (nbytes = read(c->sd, 
