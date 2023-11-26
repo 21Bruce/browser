@@ -119,25 +119,10 @@ parse_prot(char **pstr, int *protk)
 static int
 parse_dn(char **pstr, char **dn)
 {
-    char *fslash, *fcol;
+    char *fslash, *fcol, *finq, *fhash;
     size_t cplen;
 
-    /* get first pos of '/' and ':'  */
-    fslash = strchr(*pstr, '/'); 
     fcol = strchr(*pstr, ':'); 
-
-    /*
-     * if there isn't a : or /,
-     * we have a uri of the form 
-     * www.google.com, which means
-     * implicit /, so just copy to end of
-     * str 
-     */
-    if (fcol == NULL && fslash == NULL) {
-        *dn = strdup(*pstr);
-        *pstr += strlen(*pstr);
-        return HTTP_URI_PARSE_END;
-    }
 
     /*
      * if there is a :, we have
@@ -152,48 +137,88 @@ parse_dn(char **pstr, char **dn)
         return HTTP_URI_PARSE_PORT;
     }
 
+    fslash = strchr(*pstr, '/'); 
+
     /*
      * if there is a / and no :, we have
      * a uri of the form
      * www.google.com/path, so copy
      * up to /
      */
- 
-    cplen = fslash - *pstr; 
-    xasprintf(dn, "%.*s", cplen, *pstr);
-    *pstr += cplen;
-    return HTTP_URI_PARSE_PATH;
+    if (fslash != NULL) {
+        cplen = fslash - *pstr; 
+        xasprintf(dn, "%.*s", cplen, *pstr);
+        *pstr += cplen;
+        return HTTP_URI_PARSE_PATH;
+    }
+
+    finq = strchr(*pstr, '?'); 
+
+    /*
+     * if there is a ? and no : /, we have
+     * a uri of the form
+     * www.google.com?params, so copy
+     * up to ?
+     */
+    if (finq != NULL) {
+        cplen = finq - *pstr; 
+        xasprintf(dn, "%.*s", cplen, *pstr);
+        *pstr += cplen;
+        return HTTP_URI_PARSE_PARAM;
+    }
+
+    fhash = strchr(*pstr, '#'); 
+
+    /*
+     * if there is a # and no : / ?, we have
+     * a uri of the form
+     * www.google.com#anchor, so copy
+     * up to #
+     */
+    if (fhash != NULL) {
+        cplen = fhash - *pstr; 
+        xasprintf(dn, "%.*s", cplen, *pstr);
+        *pstr += cplen;
+        return HTTP_URI_PARSE_ANCHOR;
+    }
+
+    *dn = strdup(*pstr);
+    *pstr += strlen(*pstr);
+    return HTTP_URI_PARSE_END;
 }
 
 static int
 parse_port(char **pstr, int *port) 
 {
-    char *fslash;        
-    size_t cplen;
+    char *fslash, *finq, *fhash;
 
     fslash = strchr(*pstr, '/');
 
-    /*
-     * if there isn't a slash, we have 
-     * a uri of the form www.google.com:80.
-     * in this case, convert from
-     * here to end to an int
-     */
-    if (fslash == NULL) {
-        *port = cstrtoint(*pstr);
-        return HTTP_URI_PARSE_END;
+    if (fslash != NULL) {
+        *port = csubstrtoint(*pstr, fslash);
+        *pstr += fslash - *pstr;
+        return HTTP_URI_PARSE_PATH;
     }
 
-    /*
-     * if there is a slash, we have a uri
-     * of the form www.google.com:80/.
-     * In this case, convert from
-     * here to end to slash 
-     */
+    finq = strchr(*pstr, '?'); 
 
-     *port = csubstrtoint(*pstr, fslash);
-     *pstr += fslash - *pstr;
-     return HTTP_URI_PARSE_PATH;
+    if (finq != NULL) {
+        *port = csubstrtoint(*pstr, finq);
+        *pstr += finq - *pstr;
+        return HTTP_URI_PARSE_PARAM;
+    }
+
+    fhash = strchr(*pstr, '#'); 
+
+    if (finq != NULL) {
+        *port = csubstrtoint(*pstr, fhash);
+        *pstr += fhash - *pstr;
+        return HTTP_URI_PARSE_ANCHOR;
+    }
+
+    *port = cstrtoint(*pstr);
+     return HTTP_URI_PARSE_END;
+ 
 }
 
 static int   
@@ -308,11 +333,31 @@ bksmt_uri_parse(struct bksmt_uri **dst, char *src, int flags)
         goto path;
     case HTTP_URI_PARSE_END:
         goto end;
+    case HTTP_URI_PARSE_PARAM:
+        if (src + 1 >= end)
+            goto error;
+        src += 1;
+        goto param;
+    case HTTP_URI_PARSE_ANCHOR:
+        if (src + 1 >= end)
+            goto error;
+        src += 1;
+        goto anchor;
     }
 
 port:    
     stat = parse_port(&src, &((*dst)->port));
     switch(stat) {
+    case HTTP_URI_PARSE_PARAM:
+        if (src + 1 >= end)
+            goto error;
+        src += 1;
+        goto param;
+    case HTTP_URI_PARSE_ANCHOR:
+        if (src + 1 >= end)
+            goto error;
+        src += 1;
+        goto anchor;
     case HTTP_URI_PARSE_PATH:
         goto path;
     case HTTP_URI_PARSE_END:
