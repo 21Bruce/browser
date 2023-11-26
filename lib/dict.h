@@ -25,6 +25,6 @@ void               bksmt_dict_clear(struct bksmt_dict *, char *);
 void               bksmt_dict_free(struct bksmt_dict *);
 
 #define BKSMT_DICT_FOREACH(dict, e) \
-    LIST_FOREACH(e, &(dict->elems), elist)
+    LIST_FOREACH(e, &((dict)->elems), elist)
 
 #endif
