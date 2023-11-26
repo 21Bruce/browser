@@ -24,7 +24,6 @@
 #define HTTP_URI_PARSE_ERROR    7
 #define HTTP_URI_PARSE_OK       8
 
-static int   isend(char *);
 static int   parse_prot(char **, int *); 
 static int   parse_dn(char **, char **); 
 static int   parse_fpath(char **, char **); 
@@ -268,6 +267,7 @@ parse_parameters(char **pstr, struct bksmt_dict **params)
         free(tmpk);
         free(tmpv);
     }
+
 finish:
     free(tmpv);
     free(tmpk);
@@ -277,17 +277,21 @@ finish:
 int 
 bksmt_uri_parse(struct bksmt_uri **dst, char *src, int flags)
 {
-    char *dn, *fpath, *anchor;
+    char *end;
     int stat, protk, port;
     struct bksmt_dict *params;
     struct bksmt_dict_elem *e;
 
+    end = strlen(src) + src;
     *dst = xzalloc(sizeof **dst);
+
     stat = parse_prot(&src, &((*dst)->protocolk));
     switch(stat){
     case HTTP_URI_PARSE_NOPROT:
         break;
     case HTTP_URI_PARSE_OK:
+        if (src + 3 >= end)
+            goto error;
         src += 3;
         break;
     case HTTP_URI_PARSE_ERROR:
@@ -296,6 +300,8 @@ bksmt_uri_parse(struct bksmt_uri **dst, char *src, int flags)
     stat = parse_dn(&src, &((*dst)->dn));
     switch(stat){
     case HTTP_URI_PARSE_PORT:
+        if (src + 1 >= end)
+            goto error;
         src += 1;
         goto port;
     case HTTP_URI_PARSE_PATH:
@@ -317,9 +323,13 @@ path:
     stat = parse_fpath(&src, &((*dst)->fpath));
     switch(stat) {
     case HTTP_URI_PARSE_PARAM:
+        if (src + 1 >= end)
+            goto error;
         src += 1;
         goto param;
     case HTTP_URI_PARSE_ANCHOR:
+        if (src + 1 >= end)
+            goto error;
         src += 1;
         goto anchor;
     case HTTP_URI_PARSE_END:
@@ -330,6 +340,8 @@ param:
     stat = parse_parameters(&src, &((*dst)->parameters));
     switch(stat) {
     case HTTP_URI_PARSE_ANCHOR:
+        if (src + 1 >= end)
+            goto error;
         src += 1;
         goto anchor;
     case HTTP_URI_PARSE_END:
@@ -337,8 +349,7 @@ param:
     } 
 
 anchor:
-     anchor = strdup(src);
-     (*dst)->anchor = anchor; 
+     (*dst)->anchor = strdup(src);
      goto end;
 
 error:
@@ -349,6 +360,64 @@ end:
      return HTTP_OK;
 }
 
+int
+bksmt_uri_build(struct bksmt_uri *uri, char **ret)
+{
+    struct bksmt_http_prot_lut_entry p;
+    char *portstr;
+    struct bksmt_dict_elem *e;
+    size_t len;
+
+    assert(uri != NULL);
+    assert(uri->dn != NULL);
+    assert(uri->protocolk < 2);
+
+    /*
+     * fill in protocol
+     */
+    p = bksmt_http_prot_lut[uri->protocolk];
+    xasprintf(ret, "%.*s://", p.len, p.prot);
+
+    /*
+     * fill in domain name 
+     */
+    xasprintf(ret, "%s%s", *ret, uri->dn);
+
+    /*
+     * fill in port 
+     */
+    if (uri->port) {
+        portstr = inttocstr(uri->port);
+        xasprintf(ret, "%s:%s", *ret, portstr);
+        free(portstr);
+    }
+
+    /*
+     * fill in path 
+     */
+    xasprintf(ret, "%s%s", *ret, uri->fpath ? uri->fpath : "/");
+
+    /*
+     * fill parameters
+     */
+    if (uri->parameters) {
+        xasprintf(ret, "%s?", *ret);
+        BKSMT_DICT_FOREACH(uri->parameters, e) {
+            xasprintf(ret, "%s%s=%s&", *ret, e->key, e->val);
+        }
+        len = strlen(*ret);
+        /*
+         * delete last ampersand
+         */
+        (*ret)[len-1] = 0;
+    }
+
+    if (uri->anchor) {
+        xasprintf(ret, "%s#%s", *ret, uri->anchor);
+    }
+    return HTTP_OK;
+}
+
 void
 bksmt_uri_free(struct bksmt_uri *uri)
 {
@@ -356,6 +425,6 @@ bksmt_uri_free(struct bksmt_uri *uri)
     if (uri->dn) free(uri->dn);
     if (uri->fpath) free(uri->fpath);
     if (uri->parameters) bksmt_dict_free(uri->parameters);
-    if (uri->anchor) bksmt_dict_free(uri->anchor);
+    if (uri->anchor) free(uri->anchor);
     free(uri);
 }
