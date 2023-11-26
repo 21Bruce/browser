@@ -464,12 +464,19 @@ bksmt_uri_build(struct bksmt_uri *uri, char **ret)
 }
 
 void
-bksmt_uri_free(struct bksmt_uri *uri)
+bksmt_uri_clear(struct bksmt_uri *uri)
 {
     assert(uri != NULL);
     if (uri->dn) free(uri->dn);
     if (uri->fpath) free(uri->fpath);
     if (uri->parameters) bksmt_dict_free(uri->parameters);
     if (uri->anchor) free(uri->anchor);
+}
+
+void
+bksmt_uri_free(struct bksmt_uri *uri)
+{
+    assert(uri != NULL);
+    bksmt_uri_clear(uri);
     free(uri);
 }

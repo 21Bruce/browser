@@ -14,11 +14,11 @@ struct bksmt_uri {
 
 char *bksmt_cstrpctenc(char *);
 
-struct bksmt_uri *bksmt_uri_init(void);
-
 int bksmt_uri_parse(struct bksmt_uri **, char *, int);
 
 int bksmt_uri_build(struct bksmt_uri *, char **);
+
+void bksmt_uri_clear(struct bksmt_uri *);
 
 void bksmt_uri_free(struct bksmt_uri *);
 
