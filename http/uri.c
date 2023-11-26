@@ -411,7 +411,7 @@ bksmt_uri_build(struct bksmt_uri *uri, char **ret)
     struct bksmt_http_prot_lut_entry p;
     char *portstr;
     struct bksmt_dict_elem *e;
-    size_t len;
+    size_t len, i;
 
     assert(uri != NULL);
     assert(uri->dn != NULL);
@@ -447,14 +447,15 @@ bksmt_uri_build(struct bksmt_uri *uri, char **ret)
      */
     if (uri->parameters) {
         xasprintf(ret, "%s?", *ret);
+        i = 0;
+        len = uri->parameters->nelem;
         BKSMT_DICT_FOREACH(uri->parameters, e) {
-            xasprintf(ret, "%s%s=%s&", *ret, e->key, e->val);
+            if (i == len - 1)
+                xasprintf(ret, "%s%s=%s", *ret, e->key, e->val);
+            else
+                xasprintf(ret, "%s%s=%s&", *ret, e->key, e->val);
+            i++;
         }
-        len = strlen(*ret);
-        /*
-         * delete last ampersand
-         */
-        (*ret)[len-1] = 0;
     }
 
     if (uri->anchor) {

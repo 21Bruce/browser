@@ -119,6 +119,7 @@ bksmt_dict_clear(struct bksmt_dict *dict, char *key)
         free(c->val);
         LIST_REMOVE(c, elist);
         free(c);
+        dict->nelem -= 1;
     }
 }
 
