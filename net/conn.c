@@ -1,6 +1,7 @@
 #include "conn.h"
 #include "../lib/buf.h"
 #include "../lib/xmalloc.h"
+#include "../lib/strconv.h"
 
 #include <unistd.h>
 #include <assert.h>
@@ -20,38 +21,6 @@
 #define CONN_ISTLS(type)  (type & CONN_TLS)
 
 #define MAXADDRLEN 256
-
-static int cstrtonum(char *);
-static int pow(int, int);
-
-static int
-pow(int b, int e)
-{
-    int i = 0, exp = 1;
-
-    while (i < e) {
-        exp *= b;
-        i++;
-    }
-
-    return exp;
-}
-
-static int
-cstrtonum(char *str)
-{
-    int i;
-    int sum;
-    char c;
-
-    i = strlen(str) - 1;
-    sum = 0;
-    while((c = *str++)) {
-        sum += (c - '0') * pow(10,i);
-        i--;
-    }
-    return sum;
-}
 
 int
 bksmt_conn_open(char *addr, char *aport, char *port, int type, int flags, 
@@ -83,7 +52,7 @@ bksmt_conn_open(char *addr, char *aport, char *port, int type, int flags,
     } else {
         c->addrlen = sizeof (c->addr); 
         c->addr.sin_family = htons(AF_INET);
-        c->addr.sin_port = htons(cstrtonum(aport));
+        c->addr.sin_port = htons(cstrtoint(aport));
         if (inet_pton(family, addr, &(c->addr.sin_addr)) != 1) 
             goto abort;
    }
