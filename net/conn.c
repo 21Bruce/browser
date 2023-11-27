@@ -109,6 +109,48 @@ abort:
 }
 
 int
+bksmt_conn_msend(struct bksmt_conn *c, unsigned char *buf, 
+        size_t nsend) {
+
+    size_t nbytes, written;
+
+    if(c->lazyf && !CONN_ISUDP(c->type) && connect(c->sd, &(c->addr), c->addrlen))
+        return CONN_ERROR;
+
+    written = 0;
+    while((written < nsend) && (nbytes = write(c->sd, 
+                    buf + written, nsend - written))) {
+        if (nbytes <= 0)
+            return CONN_ERROR;
+        written += nbytes;
+    }
+
+    return CONN_OK;
+}
+
+int
+bksmt_conn_mrecv(struct bksmt_conn *c, unsigned char *buf, 
+        size_t nrecv) {
+
+    size_t nbytes, written;
+
+    if(c->lazyf && !CONN_ISUDP(c->type) && connect(c->sd, &(c->addr), c->addrlen))
+        return CONN_ERROR;
+
+    written = 0;
+    while((written < nrecv) && (nbytes = read(c->sd, 
+                    buf + written, nrecv - written))) {
+        if (nbytes <= 0)
+            return CONN_ERROR;
+        written += nbytes;
+    }
+
+    return CONN_OK;
+}
+
+
+
+int
 bksmt_conn_recv(struct bksmt_conn *c, struct bksmt_buf *b, 
         size_t nrecv) {
 

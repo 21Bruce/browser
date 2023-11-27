@@ -94,9 +94,8 @@ bksmt_buf_read(struct bksmt_buf *buf, unsigned char *mbuf, size_t buflen)
     switch(buf->type) {
     case BUF_FILE:
         return bksmt_buf_read_file(buf, mbuf, buflen);
-    case BUF_MMEM:
-        return bksmt_buf_read_mbuf(buf, mbuf, buflen);
-    case BUF_MMAP:
+    case BUF_MSTAT:
+    case BUF_MDYNA:
         return bksmt_buf_read_mbuf(buf, mbuf, buflen);
     default:
         return -1;
@@ -109,9 +108,8 @@ bksmt_buf_write(struct bksmt_buf *buf, unsigned char *mbuf, size_t buflen)
     switch(buf->type) {
     case BUF_FILE:
         return bksmt_buf_write_file(buf, mbuf, buflen);
-    case BUF_MMEM:
-        return bksmt_buf_write_mbuf(buf, mbuf, buflen);
-    case BUF_MMAP:
+    case BUF_MSTAT:
+    case BUF_MDYNA:
         return bksmt_buf_write_mbuf(buf, mbuf, buflen);
     default:
         return -1;

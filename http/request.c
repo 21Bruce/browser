@@ -1,0 +1,126 @@
+#include "request.h"
+
+#include "../lib/dict.h"
+#include "../lib/buf.h"
+#include "../lib/xstring.h"
+#include "http.h"
+
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <assert.h>
+
+#define KB(x) ((x)*1000)
+
+#define RECV_BUF_SIZE (KB(8))
+
+#define SEND_BUF_SIZE (KB(1))
+
+int
+bksmt_http_req_send(struct bksmt_http_req *req, struct bksmt_conn *conn)
+{
+    unsigned char *bytes;
+    char sp, sl, *dcrlf, *flend, *hpair;
+    size_t pathlen, flendlen, hpairlen;
+    struct bksmt_http_verb_lut_entry vk;
+    struct bksmt_dict_elem *e;
+    int stat;
+
+    assert(req != NULL);
+
+    /* special chars */
+    sp = ' ';
+    sl = '/'; 
+    dcrlf = "\r\n\r\n";
+
+    vk = bksmt_http_verb_lut[req->header.verbk];
+
+    /* send verb and a space */
+    stat = bksmt_conn_msend(conn, vk.verb, vk.len);
+    if (stat == CONN_ERROR)
+        return HTTP_ERROR;
+
+    stat = bksmt_conn_msend(conn, &sp, 1);
+    if (stat == CONN_ERROR)
+        return HTTP_ERROR;
+ 
+    pathlen = strlen(req->header.fpath);
+
+    /* send file path and a space */
+    stat = bksmt_conn_msend(conn, req->header.fpath, pathlen);
+    if (stat == CONN_ERROR)
+        return HTTP_ERROR;
+
+    stat = bksmt_conn_msend(conn, &sp, 1);
+    if (stat == CONN_ERROR)
+        return HTTP_ERROR;
+
+    /* construct end of first line */
+    flendlen = xasprintf(&flend, "HTTP/%d.%d\r\n", 
+            req->header.vmajor, req->header.vminor);
+    
+    /* send end of first line */
+    stat = bksmt_conn_msend(conn, flend, flendlen);
+    if (stat == CONN_ERROR) {
+        free(flend);
+        return HTTP_ERROR;
+    }
+
+    /* free resources to construct first line */
+    free(flend);
+
+    /* send mime fields */
+    if (req->header.mfields) {
+        BKSMT_DICT_FOREACH(req->header.mfields, e) {
+            hpairlen = xasprintf(&hpair, "%s: %s\r\n", e->key, e->val);
+            stat = bksmt_conn_msend(conn, hpair, hpairlen);
+            if (stat == CONN_ERROR) {
+                free(hpair);
+                return HTTP_ERROR;
+            }
+            free(hpair);
+        }
+    }
+
+    /* send header terminator */
+    stat = bksmt_conn_msend(conn, dcrlf, 4);
+    if (stat == CONN_ERROR) 
+        return HTTP_ERROR;
+ 
+    /* send body */
+    if (req->body) {
+        stat = bksmt_conn_send(conn, req->body, req->body->end - req->body->start);
+        if (stat == CONN_ERROR)
+            return HTTP_ERROR;
+    }
+
+    return HTTP_OK;
+}
+
+void
+bksmt_http_req_clear(struct bksmt_http_req *req)
+{
+    assert(req != NULL);
+
+    if (req->header.mfields) 
+        bksmt_dict_free(req->header.mfields);
+
+    if (req->body)
+        switch(req->body->type) {
+        case BUF_MDYNA:
+            free(req->body->inf.mbuf);
+            return;
+        case BUF_FILE:
+            close(req->body->inf.fd);
+            return;
+        }
+}
+
+void
+bksmt_http_req_free(struct bksmt_http_req *req)
+{
+    assert(req != NULL);
+
+    bksmt_http_req_clear(req);
+    free(req);
+}

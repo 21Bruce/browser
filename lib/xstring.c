@@ -7,7 +7,7 @@
 
 #define ENOMEM -1
 
-void
+int
 xasprintf(char **ret, const char * restrict format, ...)
 {
     va_list ap;
@@ -22,6 +22,7 @@ xasprintf(char **ret, const char * restrict format, ...)
         exit(ENOMEM);
     } 
 
+    return stat;
 }
 
 

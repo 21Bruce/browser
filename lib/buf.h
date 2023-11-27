@@ -5,9 +5,9 @@
 #include <assert.h>
 
 struct bksmt_buf {
-#define BUF_FILE 1
-#define BUF_MMEM 2 
-#define BUF_MMAP 3 
+#define BUF_FILE  1
+#define BUF_MSTAT 2 
+#define BUF_MDYNA 3 
     int type;
     union bksmt_buf_inf {
         int fd;
@@ -30,9 +30,12 @@ struct bksmt_buf {
         buf->end    = endp;                              \
     } while (0)
 
-struct bksmt_buf *bksmt_buf_init();
+struct bksmt_buf *bksmt_buf_init(void);
+
 void              bksmt_buf_free(struct bksmt_buf *);
+
 int               bksmt_buf_read(struct bksmt_buf *, unsigned char *, size_t);
+
 int               bksmt_buf_write(struct bksmt_buf *, unsigned char *, size_t);
 
 struct bksmt_buf_chain {

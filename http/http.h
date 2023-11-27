@@ -1,11 +1,11 @@
 #ifndef __BKSMT_HTTP_H__
 #define __BKSMT_HTTP_H__
 
-#define CRLF "/r/n"
+#define CRLF \r\n
 
-#define CR '/r'
+#define CR \r
 
-#define LF '/n'
+#define LF \n
 
 /*
  * LUT for fast protocol type to str conversion
@@ -15,7 +15,7 @@ static struct bksmt_http_prot_lut_entry{
     int   len;
 } bksmt_http_prot_lut[2] = {
 #define HTTP_HTTP  0
-    { "http" , 4 },
+    { "http", 4 },
 #define HTTP_HTTPS 1
     { "https", 5 },
 };

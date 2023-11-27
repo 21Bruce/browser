@@ -559,18 +559,16 @@ void
 bksmt_uri_clear(struct bksmt_uri *uri)
 {
     assert(uri != NULL);
-    if (uri->dn) {
+
+    if (uri->dn) 
         free(uri->dn);
-    }
-    if (uri->fpath) {
+    if (uri->fpath) 
         free(uri->fpath);
-    }
-    if (uri->parameters) {
+    if (uri->parameters)
         bksmt_dict_free(uri->parameters);
-    }
-    if (uri->anchor) {
+    if (uri->anchor)
         free(uri->anchor);
-    }
+
     bzero(uri, sizeof *uri);
 }
 

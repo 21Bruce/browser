@@ -14,6 +14,10 @@ int bksmt_conn_open(char *, char *, char *, int, int, struct bksmt_conn **);
 
 int bksmt_conn_send(struct bksmt_conn *, struct bksmt_buf *, size_t);
 
+int bksmt_conn_msend(struct bksmt_conn *, unsigned char *, size_t);
+
+int bksmt_conn_mrecv(struct bksmt_conn *, unsigned char *, size_t);
+
 int bksmt_conn_recv(struct bksmt_conn *, struct bksmt_buf *, size_t);
 
 int bksmt_conn_recv_chain(struct bksmt_conn *, struct bksmt_buf_chain *, size_t);
