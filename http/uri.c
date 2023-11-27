@@ -344,9 +344,8 @@ parse_parameters(char **pstr, struct bksmt_dict **params)
             stat = HTTP_URI_PARSE_ANCHOR;
             goto finish;
         }
-
         /* if we have an amp and nothing in between, err*/
-        if (nxtamp == nxteq + 1) {
+        if (nxtamp == nxteq + 1 || *(nxtamp + 1) == 0) {
             stat = HTTP_URI_PARSE_ERROR;
             goto perror;
         }
@@ -382,7 +381,7 @@ bksmt_uri_parse(struct bksmt_uri *dst, char *src)
 
     end = strlen(src) + src;
 
-    /* start by parsing protection */
+    /* start by parsing protocol */
     stat = parse_prot(&src, &(dst->protocolk));
     switch(stat){
     case HTTP_URI_PARSE_NOPROT:
@@ -475,6 +474,7 @@ param:
     case HTTP_URI_PARSE_ERROR:
         goto error;
     } 
+
 anchor:
      dst->anchor = strdup(src);
      goto end;
