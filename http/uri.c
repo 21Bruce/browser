@@ -30,6 +30,10 @@ static int   parse_fpath(char **, char **);
 static int   parse_port(char **, int *); 
 static int   parse_parameters(char **, struct bksmt_dict **); 
 
+/* build locals */
+
+#define BKSMT_ISPCTENC(flags) flags & BKSMT_URI_PARSE_PCTENC
+
 /*
  * should optimize
  */
@@ -306,9 +310,9 @@ parse_parameters(char **pstr, struct bksmt_dict **params)
     /* find position of next equals */
     while((nxteq = strchr(*pstr, '='))) {
         /* if nothing is in the key spot, err*/
-        if (nxteq == *pstr + 1) {
+        if (nxteq == *pstr) {
             stat = HTTP_URI_PARSE_ERROR;
-            goto finish;
+            goto pquit;
         }
         xasprintf(&tmpk, "%.*s", nxteq - *pstr, *pstr);
         *pstr = nxteq + 1; 
@@ -357,11 +361,12 @@ finish:
     free(tmpv);
 perror:
     free(tmpk);
+pquit:
     return stat;
 }
 
 int 
-bksmt_uri_parse(struct bksmt_uri *dst, char *src, int flags)
+bksmt_uri_parse(struct bksmt_uri *dst, char *src)
 {
     char *end;
     int stat, protk, port;
@@ -483,12 +488,13 @@ end:
 }
 
 int
-bksmt_uri_build(struct bksmt_uri *uri, char **ret)
+bksmt_uri_build(struct bksmt_uri *uri, char **ret, int flags)
 {
     struct bksmt_http_prot_lut_entry p;
     char *portstr;
     struct bksmt_dict_elem *e;
     size_t len, i;
+    char *tmpk, *tmpv;
 
     assert(uri != NULL);
     assert(uri->dn != NULL);
@@ -517,10 +523,23 @@ bksmt_uri_build(struct bksmt_uri *uri, char **ret)
         i = 0;
         len = uri->parameters->nelem;
         BKSMT_DICT_FOREACH(uri->parameters, e) {
+            if (BKSMT_ISPCTENC(flags)) {
+                tmpk = bksmt_cstrpctenc(e->key);
+                tmpv = bksmt_cstrpctenc(e->val);
+            } else {
+                tmpk = e->key;
+                tmpv = e->val;
+            }
             if (i == len - 1)
-                xasprintf(ret, "%s%s=%s", *ret, e->key, e->val);
+                xasprintf(ret, "%s%s=%s", *ret, tmpk, tmpv);
             else
-                xasprintf(ret, "%s%s=%s&", *ret, e->key, e->val);
+                xasprintf(ret, "%s%s=%s&", *ret, tmpk, tmpv);
+
+            if (BKSMT_ISPCTENC(flags)) {
+                free(tmpk);
+                free(tmpv);
+            }
+
             i++;
         }
     }

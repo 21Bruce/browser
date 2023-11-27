@@ -14,21 +14,17 @@ struct bksmt_uri {
 
 char *bksmt_cstrpctenc(char *);
 
-int bksmt_uri_parse(struct bksmt_uri *, char *, int);
+int bksmt_uri_parse(struct bksmt_uri *, char *);
 
-int bksmt_uri_build(struct bksmt_uri *, char **);
+int bksmt_uri_build(struct bksmt_uri *, char **, int);
 
 void bksmt_uri_clear(struct bksmt_uri *);
 
 void bksmt_uri_free(struct bksmt_uri *);
 
-/* uri parse flags */
+/* uri build flags */
 
 /* apply a pct encoding to parameters */
 #define BKSMT_URI_PARSE_PCTENC 0x1
-
-/* verify input str follows official uri structure */
-#define BKSMT_URI_PARSE_STRICT 0x2
-
 
 #endif
