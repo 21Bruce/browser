@@ -105,15 +105,18 @@ parse_prot(char **pstr, int *protk)
     h = bksmt_http_prot_lut[HTTP_HTTP];
     hs = bksmt_http_prot_lut[HTTP_HTTPS];
 
-    /* check which prot we have */
-    if (strncasecmp(*pstr, hs.prot, hs.len) == 0) {
-        *protk = HTTP_HTTPS;
-        *pstr += hs.len;
-        return HTTP_URI_PARSE_OK;
-    } else if (strncasecmp(*pstr, h.prot, h.len) == 0) {
-        *protk = HTTP_HTTP;
-        *pstr += h.len;
-        return HTTP_URI_PARSE_OK;
+    if (strstr(*pstr, "://")) {
+        /* check which prot we have */
+        if (strncasecmp(*pstr, hs.prot, hs.len) == 0) {
+            *protk = HTTP_HTTPS;
+            *pstr += hs.len;
+            return HTTP_URI_PARSE_OK;
+        } else if (strncasecmp(*pstr, h.prot, h.len) == 0) {
+            *protk = HTTP_HTTP;
+            *pstr += h.len;
+            return HTTP_URI_PARSE_OK;
+        }
+        return HTTP_URI_PARSE_ERROR;
     }
 
     /* if none assume this is no prot */
@@ -262,7 +265,7 @@ parse_fpath(char **pstr, char **fpath)
     finq = strchr(*pstr, '?');
 
     /* check for if there is any path */
-    if (finq == *pstr + 1)
+    if (finq == *pstr) 
        return HTTP_URI_PARSE_ERROR;
 
     /* if we have any path scan it */
@@ -277,7 +280,7 @@ parse_fpath(char **pstr, char **fpath)
     fhash = strchr(*pstr, '#');
 
     /* check for if there is any path */
-    if (fhash == *pstr + 1)
+    if (fhash == *pstr)
         return HTTP_URI_PARSE_ERROR;
 
     /* if we have any path scan it */
@@ -333,8 +336,9 @@ parse_parameters(char **pstr, struct bksmt_dict **params)
                 stat = HTTP_URI_PARSE_END;
                 goto finish;
             }
+
             /* if we have a hash nothing in between, err*/
-            if (fhash == *pstr + 1) {
+            if (fhash == *pstr) {
                 stat = HTTP_URI_PARSE_ERROR;
                 goto perror;
             }
