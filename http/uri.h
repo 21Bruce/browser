@@ -14,7 +14,7 @@ struct bksmt_uri {
 
 char *bksmt_cstrpctenc(char *);
 
-int bksmt_uri_parse(struct bksmt_uri **, char *, int);
+int bksmt_uri_parse(struct bksmt_uri *, char *, int);
 
 int bksmt_uri_build(struct bksmt_uri *, char **);
 
