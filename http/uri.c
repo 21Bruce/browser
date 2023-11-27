@@ -92,21 +92,16 @@ bksmt_cstrpctenc(char *raw)
     return ret;
 }
 
-/*
- * 
- * 
- * 
- * 
- */
-
 static int 
 parse_prot(char **pstr, int *protk)
 {
     struct bksmt_http_prot_lut_entry h, hs;
 
+    /* get str info on protocols */
     h = bksmt_http_prot_lut[HTTP_HTTP];
     hs = bksmt_http_prot_lut[HTTP_HTTPS];
 
+    /* check which prot we have */
     if (strncasecmp(*pstr, hs.prot, hs.len) == 0) {
         *protk = HTTP_HTTPS;
         *pstr += hs.len;
@@ -116,6 +111,8 @@ parse_prot(char **pstr, int *protk)
         *pstr += h.len;
         return HTTP_URI_PARSE_OK;
     }
+
+    /* if none assume this is no prot */
     return HTTP_URI_PARSE_NOPROT;
 }
 
@@ -125,11 +122,14 @@ parse_dn(char **pstr, char **dn)
     char *fslash, *fcol, *finq, *fhash;
     size_t cplen;
 
+    /* find first colon */
     fcol = strchr(*pstr, ':'); 
 
+    /* if nothing in between protocol and colon, err */
     if (fcol == *pstr + 1)
         return HTTP_URI_PARSE_ERROR;
 
+    /* if we have a col, we have a port. scan to the col */
     if (fcol != NULL) {
         cplen = fcol - *pstr;
         xasprintf(dn, "%.*s", cplen, *pstr);
@@ -137,11 +137,14 @@ parse_dn(char **pstr, char **dn)
         return HTTP_URI_PARSE_PORT;
     }
 
+    /* if no col we may have a path */
     fslash = strchr(*pstr, '/'); 
 
+    /* if the / and curr ptr have nothing in between, err */
     if (fslash == *pstr + 1)
         return HTTP_URI_PARSE_ERROR;
  
+    /* if we have a slash, we have a path. scan to the slash */
     if (fslash != NULL) {
         cplen = fslash - *pstr; 
         xasprintf(dn, "%.*s", cplen, *pstr);
@@ -149,11 +152,14 @@ parse_dn(char **pstr, char **dn)
         return HTTP_URI_PARSE_PATH;
     }
 
+    /* if no / we may have queries */
     finq = strchr(*pstr, '?'); 
 
+    /* checking no dn again */
     if (finq == *pstr + 1)
         return HTTP_URI_PARSE_ERROR;
 
+    /* scan till next token */
     if (finq != NULL) {
         cplen = finq - *pstr; 
         xasprintf(dn, "%.*s", cplen, *pstr);
@@ -161,11 +167,14 @@ parse_dn(char **pstr, char **dn)
         return HTTP_URI_PARSE_PARAM;
     }
 
+    /* if not ? we may have an anchor */
     fhash = strchr(*pstr, '#'); 
 
+    /* checking no dn again */
     if (fhash == *pstr + 1)
         return HTTP_URI_PARSE_ERROR;
 
+    /* scan till next token */
     if (fhash != NULL) {
         cplen = fhash - *pstr; 
         xasprintf(dn, "%.*s", cplen, *pstr);
@@ -173,9 +182,11 @@ parse_dn(char **pstr, char **dn)
         return HTTP_URI_PARSE_ANCHOR;
     }
 
+    /* checking no dn again */
     if ((*pstr)[0] == 0)
         return HTTP_URI_PARSE_ERROR;
  
+    /* scan till next end */
     *dn = strdup(*pstr);
     *pstr += strlen(*pstr);
     return HTTP_URI_PARSE_END;
@@ -186,42 +197,55 @@ parse_port(char **pstr, int *port)
 {
     char *fslash, *finq, *fhash;
 
+    /* check next token */
     fslash = strchr(*pstr, '/');
+
+    /* check for if there is any port */
     if (fslash == *pstr + 1)
         return HTTP_URI_PARSE_ERROR;
  
+    /* if we have port scan it */
     if (fslash != NULL) {
        *port = csubstrtoint(*pstr, fslash);
         *pstr += fslash - *pstr;
         return HTTP_URI_PARSE_PATH;
     }
 
+    /* check next token */
     finq = strchr(*pstr, '?'); 
+    
+    /* check for if there is any port */
     if (finq == *pstr + 1)
         return HTTP_URI_PARSE_ERROR;
  
+    /* if we have port scan it */
     if (finq != NULL) {
         *port = csubstrtoint(*pstr, finq);
         *pstr += finq - *pstr;
         return HTTP_URI_PARSE_PARAM;
     }
 
+    /* check next token */
     fhash = strchr(*pstr, '#'); 
+
+    /* check for if there is any port */
     if (fhash == *pstr + 1)
         return HTTP_URI_PARSE_ERROR;
 
-    if (finq != NULL) {
+    /* if we have port scan it */
+    if (fhash != NULL) {
         *port = csubstrtoint(*pstr, fhash);
         *pstr += fhash - *pstr;
         return HTTP_URI_PARSE_ANCHOR;
     }
 
+    /* check for if there is any port */
     if ((*pstr)[0] == 0)
         return HTTP_URI_PARSE_ERROR;
 
+    /* if we have port scan it */
     *port = cstrtoint(*pstr);
      return HTTP_URI_PARSE_END;
- 
 }
 
 static int   
@@ -230,10 +254,14 @@ parse_fpath(char **pstr, char **fpath)
     char *fhash, *finq;
     size_t cplen;
 
+    /* check next token */
     finq = strchr(*pstr, '?');
+
+    /* check for if there is any path */
     if (finq == *pstr + 1)
        return HTTP_URI_PARSE_ERROR;
 
+    /* if we have any path scan it */
     if (finq != NULL) {
         cplen = finq - *pstr;
         xasprintf(fpath, "%.*s", cplen, *pstr);
@@ -241,10 +269,14 @@ parse_fpath(char **pstr, char **fpath)
         return HTTP_URI_PARSE_PARAM;
     }
 
+    /* check next token */
     fhash = strchr(*pstr, '#');
+
+    /* check for if there is any path */
     if (fhash == *pstr + 1)
         return HTTP_URI_PARSE_ERROR;
 
+    /* if we have any path scan it */
     if (fhash != NULL) {
         cplen = fhash - *pstr;
         xasprintf(fpath, "%.*s", cplen, *pstr);
@@ -252,14 +284,14 @@ parse_fpath(char **pstr, char **fpath)
         return HTTP_URI_PARSE_ANCHOR;
     }
 
+    /* check for if there is any path */
     if ((*pstr)[0] == 0)
         return HTTP_URI_PARSE_ERROR;
 
+    /* if we have any path scan it */
     *fpath = strdup(*pstr);
     *pstr += strlen(*pstr);
     return HTTP_URI_PARSE_END;
-
-
 }
 
 static int
