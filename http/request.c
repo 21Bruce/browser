@@ -61,13 +61,14 @@ bksmt_http_req_send(struct bksmt_http_req *req, struct bksmt_conn *conn)
     
     /* send end of first line */
     stat = bksmt_conn_msend(conn, flend, flendlen);
-    if (stat == CONN_ERROR) {
-        free(flend);
-        return HTTP_ERROR;
-    }
 
     /* free resources to construct first line */
     free(flend);
+
+    /* check status of connection */
+    if (stat == CONN_ERROR) {
+        return HTTP_ERROR;
+    }
 
     /* send mime fields */
     if (req->header.mfields) {
