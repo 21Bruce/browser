@@ -74,11 +74,9 @@ bksmt_http_req_send(struct bksmt_http_req *req, struct bksmt_conn *conn)
         BKSMT_DICT_FOREACH(req->header.mfields, e) {
             hpairlen = xasprintf(&hpair, "%s: %s\r\n", e->key, e->val);
             stat = bksmt_conn_msend(conn, hpair, hpairlen);
-            if (stat == CONN_ERROR) {
-                free(hpair);
-                return HTTP_ERROR;
-            }
             free(hpair);
+            if (stat == CONN_ERROR) 
+                return HTTP_ERROR;
         }
     }
 
