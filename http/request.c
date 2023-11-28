@@ -31,7 +31,7 @@ bksmt_http_req_send(struct bksmt_http_req *req, struct bksmt_conn *conn)
     /* special chars */
     sp = ' ';
     sl = '/'; 
-    dcrlf = "\r\n\r\n";
+    dcrlf = "\r\n";
 
     vk = bksmt_http_verb_lut[req->header.verbk];
 
@@ -83,7 +83,7 @@ bksmt_http_req_send(struct bksmt_http_req *req, struct bksmt_conn *conn)
     }
 
     /* send header terminator */
-    stat = bksmt_conn_msend(conn, dcrlf, 4);
+    stat = bksmt_conn_msend(conn, dcrlf, 2);
     if (stat == CONN_ERROR) 
         return HTTP_ERROR;
  
