@@ -1,12 +1,191 @@
 #include "response.h"
 
 #include "../net/conn.h"
+#include "../lib/xstring.h"
+#include "../lib/strconv.h"
+#include "../lib/xmalloc.h"
+#include "mime.h"
 #include "http.h"
 
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define RBUFLEN 8000 
+
+/* locals for parsing */
+static int parse_header(struct bksmt_http_res *, unsigned char *, size_t); 
+
+static char *adv_ws(char *, char *);
+static int inttostatk(int);
+
+/* ok */
+#define HTTP_RES_PARSE_OK    0
+/* error */
+#define HTTP_RES_PARSE_ERROR 1
+
+static char *
+adv_ws(char *src, char *end)
+{
+    while (src < end && *src == ' ')
+        src++;
+    return src;
+}
+
+static int
+inttostatk(int statc)
+{
+#define intokstatk(x) HTTP_ ##x
+#define statconvcase(x) case x: return intokstatk(x) 
+    switch(statc) {
+    statconvcase(100);
+    statconvcase(101);
+    statconvcase(102);
+    statconvcase(103);
+    statconvcase(200);
+    statconvcase(201);
+    statconvcase(202);
+    statconvcase(203);
+    statconvcase(204);
+    statconvcase(205);
+    statconvcase(206);
+    statconvcase(207);
+    statconvcase(208);
+    statconvcase(226);
+    statconvcase(300);
+    statconvcase(301);
+    statconvcase(302);
+    statconvcase(303);
+    statconvcase(304);
+    statconvcase(305);
+    statconvcase(306);
+    statconvcase(307);
+    statconvcase(400);
+    statconvcase(401);
+    statconvcase(402);
+    statconvcase(403);
+    statconvcase(404);
+    statconvcase(405);
+    statconvcase(406);
+    statconvcase(407);
+    statconvcase(408);
+    statconvcase(409);
+    statconvcase(410);
+    statconvcase(411);
+    statconvcase(412);
+    statconvcase(413);
+    statconvcase(414);
+    statconvcase(415);
+    statconvcase(416);
+    statconvcase(417);
+    statconvcase(418);
+    statconvcase(421);
+    statconvcase(422);
+    statconvcase(423);
+    statconvcase(424);
+    statconvcase(425);
+    statconvcase(426);
+    statconvcase(428);
+    statconvcase(429);
+    statconvcase(431);
+    statconvcase(451);
+    statconvcase(500);
+    statconvcase(501);
+    statconvcase(502);
+    statconvcase(503);
+    statconvcase(504);
+    statconvcase(505);
+    statconvcase(506);
+    statconvcase(507);
+    statconvcase(508);
+    statconvcase(510);
+    statconvcase(511);
+    default: return -1;
+    } 
+}
+
+
+static int 
+parse_header(struct bksmt_http_res *res, unsigned char *buf, size_t len) 
+{
+    char *cptr, *end, *fdot, *nws, *ncrlf, *fdcrlf, *ncol, *tmpk, *tmpv;
+
+    cptr = buf;
+    end = buf + len;
+
+    if (strncasecmp(cptr, "HTTP", 4) != 0)
+        return HTTP_RES_PARSE_ERROR;
+
+    cptr += 4;
+
+    if (cptr >= end || *cptr != '/')
+        return HTTP_RES_PARSE_ERROR;
+
+    cptr += 1;
+
+    if (cptr >= end)
+        return HTTP_RES_PARSE_ERROR;
+
+    fdot = strchr(cptr, '.');
+    if (fdot == NULL)
+        return HTTP_RES_PARSE_ERROR;
+
+    res->header.vmajor = csubstrtoint(cptr, fdot);
+
+    cptr = fdot + 1;
+    if (cptr >= end)
+        return HTTP_RES_PARSE_ERROR;
+
+    nws = strchr(cptr, ' ');
+    if (nws == NULL)
+        return HTTP_RES_PARSE_ERROR;
+
+    res->header.vminor = csubstrtoint(cptr, nws);
+
+    cptr = adv_ws(nws, end);
+    if (cptr >= end)
+        return HTTP_RES_PARSE_ERROR;
+
+    nws = strchr(cptr, ' ');
+    if (nws == NULL)
+        return HTTP_RES_PARSE_ERROR;
+
+    res->header.statk = inttostatk(csubstrtoint(cptr, nws));
+    if (res->header.statk == -1)
+        return HTTP_RES_PARSE_ERROR;
+
+    ncrlf = strstr(cptr, "\r\n");
+    if (ncrlf == NULL)
+        return HTTP_RES_PARSE_ERROR;
+
+    cptr = ncrlf + 2;
+
+    // since we are 0 terminated at last /n
+    fdcrlf = strstr(cptr, "\r\n\r");
+    if (fdcrlf == NULL)
+        return HTTP_RES_PARSE_ERROR;
+
+    res->header.mfields = bksmt_dict_init();
+    while((ncrlf = strstr(cptr, "\r\n"))) {
+        ncol = strchr(cptr, ':');
+        if (ncol == NULL || ncol > ncrlf)
+            return HTTP_RES_PARSE_ERROR;
+        xasprintf(&tmpk, "%.*s", ncol - cptr, cptr);
+        cptr = adv_ws(ncol + 1, end);
+        if (cptr == ncrlf) {
+            free(tmpk);
+            return HTTP_RES_PARSE_ERROR;
+        }
+        xasprintf(&tmpv, "%.*s", ncrlf - cptr, cptr);
+        //bksmt_cstrmime(tmpk);
+        bksmt_dict_set(res->header.mfields, tmpk, tmpv);
+        free(tmpk);
+        free(tmpv);
+        cptr = ncrlf + 2;
+    }
+    return HTTP_RES_PARSE_OK;
+}
 
 int
 bksmt_http_res_recv(struct bksmt_http_res *res, struct bksmt_conn *conn)
@@ -53,8 +232,12 @@ bksmt_http_res_recv(struct bksmt_http_res *res, struct bksmt_conn *conn)
         return HTTP_ERROR;
     
     hlen = pos + 1;
+    rbuf[pos] = 0;
 
-    fprintf(stderr, "%.*s", hlen, rbuf);
+    stat = parse_header(res, rbuf, hlen);
+    if (stat == HTTP_RES_PARSE_ERROR) 
+        return HTTP_ERROR;
+    
 
     return HTTP_OK;
 }

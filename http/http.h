@@ -1,11 +1,11 @@
 #ifndef __BKSMT_HTTP_H__
 #define __BKSMT_HTTP_H__
 
-#define CRLF \r\n
+#define CRLF "\r\n"
 
-#define CR \r
+#define CR '\r'
 
-#define LF \n
+#define LF '\n'
 
 /*
  * LUT for fast protocol type to str conversion
