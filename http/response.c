@@ -178,7 +178,7 @@ parse_header(struct bksmt_http_res *res, unsigned char *buf, size_t len)
             return HTTP_RES_PARSE_ERROR;
         }
         xasprintf(&tmpv, "%.*s", ncrlf - cptr, cptr);
-        //bksmt_cstrmime(tmpk);
+        bksmt_cstrmime(tmpk);
         bksmt_dict_set(res->header.mfields, tmpk, tmpv);
         free(tmpk);
         free(tmpv);

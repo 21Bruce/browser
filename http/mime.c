@@ -11,7 +11,7 @@
 static int 
 islower(char c)
 {
-    if (c - 'a' <= 25)
+    if (c >= 'a' && c <= 'z')
         return 1;
 
     return 0;
@@ -45,6 +45,7 @@ bksmt_cstrmime(char *str)
             str[i] = toupper(str[i]);
             sf = 0;
         }
+        sf = 0;
     }
 }
 
