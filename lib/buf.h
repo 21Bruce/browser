@@ -23,11 +23,11 @@ struct bksmt_buf {
 
 #define BKSMT_BUF_ATTACH(buf, typev, intv, startp, endp) \
     do {                                                 \
-        assert(buf != NULL);                             \
-        buf->type   = typev;                             \
-        buf->inf    = (union bksmt_buf_inf) intv;        \
-        buf->start  = startp;                            \
-        buf->end    = endp;                              \
+        assert((buf) != NULL);                             \
+        (buf)->type   = typev;                             \
+        (buf)->inf    = (union bksmt_buf_inf) intv;        \
+        (buf)->start  = startp;                            \
+        (buf)->end    = endp;                              \
     } while (0)
 
 struct bksmt_buf *bksmt_buf_init(void);

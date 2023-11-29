@@ -4,5 +4,7 @@
 char *inttocstr(int);
 int   cstrtoint(char *);
 int   csubstrtoint(char *, char *);
+int   hexcstrtoint(char *);
+int   hexcsubstrtoint(char *, char *);
 
 #endif
