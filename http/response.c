@@ -199,8 +199,8 @@ bksmt_http_res_recv(struct bksmt_http_res *res, struct bksmt_conn *conn)
     char rbuf[RBUFLEN], chlenbuf[sizeof(size_t)];
     int pos, stat, r1f, n1f, r2f, n2f, endf;
     size_t hlen, chlen, blen;
-    char *lenstr, *ncrlf; 
-    unsigned char *bufbck;
+    char *lenstr; 
+    unsigned char *bufbck, *tmpbuf;
 
     assert(res != NULL && conn != NULL);
     res->body = NULL;
@@ -284,7 +284,6 @@ bksmt_http_res_recv(struct bksmt_http_res *res, struct bksmt_conn *conn)
             if (stat == CONN_ERROR) 
                 goto error;
             chlen = hexcsubstrtoint(chlenbuf, chlenbuf + pos);
-            fprintf(stderr, "%d\n", chlen);
             if (chlen == 0) {
                 stat = bksmt_conn_mrecv(conn, rbuf, 2);
                 if (stat == CONN_ERROR) 
@@ -293,14 +292,18 @@ bksmt_http_res_recv(struct bksmt_http_res *res, struct bksmt_conn *conn)
                 BKSMT_BUF_ATTACH(res->body, BUF_MDYNA, bufbck, 0, blen); 
                 return HTTP_OK;
             }
-            stat = bksmt_conn_mrecv(conn, rbuf, chlen);
+            tmpbuf = xmallocarray(chlen, sizeof *tmpbuf);
+            stat = bksmt_conn_mrecv(conn, tmpbuf, chlen);
             if (stat == CONN_ERROR) 
-                goto error;
-            blen = xasprintf(&bufbck, "%s%.*s", bufbck, chlen, rbuf);
+                goto error1;
+            blen = xasprintf(&bufbck, "%s%.*s", bufbck, chlen, tmpbuf);
+            free(tmpbuf);
             stat = bksmt_conn_mrecv(conn, rbuf, 2);
             if (stat == CONN_ERROR) 
                 goto error;
         }
+error1:
+        free(tmpbuf);
 error:
         if (bufbck != NULL)
             free(bufbck);
