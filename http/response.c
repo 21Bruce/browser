@@ -18,6 +18,7 @@
 static int parse_header(struct bksmt_http_res *, unsigned char *, size_t); 
 
 static char *adv_ws(char *, char *);
+
 static int inttostatk(int);
 
 /* ok */
@@ -170,13 +171,11 @@ parse_header(struct bksmt_http_res *res, unsigned char *buf, size_t len)
     while((ncrlf = strstr(cptr, "\r\n"))) {
         ncol = strchr(cptr, ':');
         if (ncol == NULL || ncol > ncrlf)
-            return HTTP_RES_PARSE_ERROR;
+            goto derror;
         xasprintf(&tmpk, "%.*s", ncol - cptr, cptr);
         cptr = adv_ws(ncol + 1, end);
-        if (cptr == ncrlf) {
-            free(tmpk);
-            return HTTP_RES_PARSE_ERROR;
-        }
+        if (cptr == ncrlf) 
+            goto verror;
         xasprintf(&tmpv, "%.*s", ncrlf - cptr, cptr);
         bksmt_cstrmime(tmpk);
         bksmt_dict_set(res->header.mfields, tmpk, tmpv);
@@ -185,16 +184,26 @@ parse_header(struct bksmt_http_res *res, unsigned char *buf, size_t len)
         cptr = ncrlf + 2;
     }
     return HTTP_RES_PARSE_OK;
+
+verror:
+    free(tmpk);
+derror:
+    bksmt_dict_free(res->header.mfields);
+    res->header.mfields = NULL;
+    return HTTP_RES_PARSE_ERROR;
 }
 
 int
 bksmt_http_res_recv(struct bksmt_http_res *res, struct bksmt_conn *conn)
 {
-    char rbuf[RBUFLEN];
-    int pos, stat, r1f, n1f, r2f, n2f;
-    size_t hlen;
+    char rbuf[RBUFLEN], chlenbuf[sizeof(size_t)];
+    int pos, stat, r1f, n1f, r2f, n2f, endf;
+    size_t hlen, chlen, blen;
+    char *lenstr, *ncrlf; 
+    unsigned char *bufbck;
 
     assert(res != NULL && conn != NULL);
+    res->body = NULL;
     
     /* find delimeter between header and body */
     /* XXX: this is REALLY inefficient, should find a better way */
@@ -230,14 +239,73 @@ bksmt_http_res_recv(struct bksmt_http_res *res, struct bksmt_conn *conn)
     /* if we don't have a header guard, err */
     if (!n2f)
         return HTTP_ERROR;
-    
-    hlen = pos + 1;
+
+    /* turn into cstr for header parsing */
+    hlen = pos; 
     rbuf[pos] = 0;
+
+    /* parse headers */
 
     stat = parse_header(res, rbuf, hlen);
     if (stat == HTTP_RES_PARSE_ERROR) 
         return HTTP_ERROR;
     
+    /* parse body */
+
+    /* if there are no mime fields, we have no body */
+    if (res->header.mfields == NULL)
+        return HTTP_OK;
+
+    /* if there is a content length, we read it all in */
+    if((lenstr = bksmt_dict_get(res->header.mfields, "Content-Length"))) {
+        chlen = cstrtoint(lenstr);
+        bufbck = xmallocarray(chlen, sizeof *bufbck);
+        stat = bksmt_conn_mrecv(conn, bufbck, chlen);
+        if (stat == CONN_ERROR) {
+            free(bufbck);
+            return HTTP_ERROR;
+        }
+        res->body = bksmt_buf_init();
+        BKSMT_BUF_ATTACH(res->body, BUF_MDYNA, bufbck, 0, chlen); 
+        return HTTP_OK;
+    }
+
+    /* if there is a chunked transfer encoding, parse it and read it in */
+    if (strcasecmp(bksmt_dict_get(res->header.mfields, "Transfer-Encoding"), "chunked") == 0) {
+        bufbck = NULL;
+        for(; ;) {
+            for(pos = 0, stat = bksmt_conn_mrecv(conn, chlenbuf, 1);
+                    chlenbuf[pos] != '\r'; 
+                    pos++, stat = bksmt_conn_mrecv(conn, chlenbuf + pos, 1)) {
+                if (stat != CONN_OK || pos >= sizeof(size_t)) 
+                    goto error;
+            }
+            stat = bksmt_conn_mrecv(conn, rbuf, 1);
+            if (stat == CONN_ERROR) 
+                goto error;
+            chlen = hexcsubstrtoint(chlenbuf, chlenbuf + pos);
+            fprintf(stderr, "%d\n", chlen);
+            if (chlen == 0) {
+                stat = bksmt_conn_mrecv(conn, rbuf, 2);
+                if (stat == CONN_ERROR) 
+                    goto error;
+                res->body = bksmt_buf_init();
+                BKSMT_BUF_ATTACH(res->body, BUF_MDYNA, bufbck, 0, blen); 
+                return HTTP_OK;
+            }
+            stat = bksmt_conn_mrecv(conn, rbuf, chlen);
+            if (stat == CONN_ERROR) 
+                goto error;
+            blen = xasprintf(&bufbck, "%s%.*s", bufbck, chlen, rbuf);
+            stat = bksmt_conn_mrecv(conn, rbuf, 2);
+            if (stat == CONN_ERROR) 
+                goto error;
+        }
+error:
+        if (bufbck != NULL)
+            free(bufbck);
+        return HTTP_ERROR;
+    }
 
     return HTTP_OK;
 }
