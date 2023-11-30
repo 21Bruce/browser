@@ -237,7 +237,7 @@ bksmt_http_res_recv(struct bksmt_http_res *res, struct bksmt_conn *conn)
     }
 
     /* if we don't have a header guard, err */
-    if (!n2f)
+    if (!n2f) 
         return HTTP_ERROR;
 
     /* turn into cstr for header parsing */
