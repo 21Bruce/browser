@@ -154,9 +154,10 @@ struct bksmt_http_res {
     struct bksmt_buf *body;
 };
 
-int bksmt_http_res_parse(struct bksmt_buf *, struct bksmt_http_res *);
 int bksmt_http_res_send(struct bksmt_http_res *, struct bksmt_conn *);
+
 int bksmt_http_res_recv(struct bksmt_http_res *, struct bksmt_conn *); 
+
 void bksmt_http_res_free(struct bksmt_http_res *);
 
 #endif

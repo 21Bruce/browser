@@ -313,3 +313,58 @@ error:
     return HTTP_OK;
 }
 
+
+int
+bksmt_http_res_send(struct bksmt_http_res *res, struct bksmt_conn *conn)
+{
+    char sp, sl, *dcrlf, *tmpstr;
+    size_t tmpstrlen;
+    struct bksmt_http_status_lut_entry sk;
+    struct bksmt_dict_elem *e;
+    int stat;
+
+    assert(res != NULL);
+
+    /* special chars */
+    sp = ' ';
+    sl = '/'; 
+    dcrlf = "\r\n";
+
+    /* construct first line using lut key */
+    sk = bksmt_http_status_lut[res->header.statk];
+    tmpstrlen = xasprintf(&tmpstr, "HTTP/%d.%d %.*s %.*s\r\n", 
+            res->header.vmajor, res->header.vminor, 3, sk.code, sk.msglen, sk.stat_msg);
+
+    /* send first line */
+    stat = bksmt_conn_msend(conn, tmpstr, tmpstrlen);
+    free(tmpstr);
+
+    /* If conn failed, err */
+    if (stat == CONN_ERROR)
+        return HTTP_ERROR;
+
+    /* send mime fields */
+    if (res->header.mfields) {
+        BKSMT_DICT_FOREACH(res->header.mfields, e) {
+            tmpstrlen = xasprintf(&tmpstr, "%s: %s\r\n", e->key, e->val);
+            stat = bksmt_conn_msend(conn, tmpstr, tmpstrlen);
+            free(tmpstr);
+            if (stat == CONN_ERROR) 
+                return HTTP_ERROR;
+        }
+    }
+
+    /* send header terminator */
+    stat = bksmt_conn_msend(conn, dcrlf, 2);
+    if (stat == CONN_ERROR) 
+        return HTTP_ERROR;
+ 
+    /* send body */
+    if (res->body) {
+        stat = bksmt_conn_send(conn, res->body, res->body->end - res->body->start);
+        if (stat == CONN_ERROR)
+            return HTTP_ERROR;
+    }
+
+    return HTTP_OK;
+}
