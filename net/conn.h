@@ -10,7 +10,10 @@
 
 struct bksmt_conn;
 
-int bksmt_conn_open(char *, char *, char *, int, int, struct bksmt_conn **);
+
+int bksmt_conn_init(char *, char *, char *, int, int, struct bksmt_conn **);
+
+int bksmt_conn_open(struct bksmt_conn *);
 
 int bksmt_conn_send(struct bksmt_conn *, struct bksmt_buf *, size_t);
 
@@ -37,8 +40,7 @@ void bksmt_conn_close(struct bksmt_conn *);
 #define CONN_BAD    4
 
 /* init flags */
-#define CONN_LAZY 0x1
-#define CONN_DNS  0x2
+#define CONN_DNS  0x1
 #define CONN_FLAG_SET(flags, flag) flags |= flag
 
 /*
@@ -50,10 +52,6 @@ struct bksmt_conn {
      */
     struct sockaddr_in addr;
     socklen_t addrlen;
-    /*
-     * lazy flag
-     */
-    int lazyf;
     /*
      * socket descriptor
      */

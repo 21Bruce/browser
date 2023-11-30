@@ -23,7 +23,7 @@
 #define MAXADDRLEN 256
 
 int
-bksmt_conn_open(char *addr, char *aport, char *port, int type, int flags, 
+bksmt_conn_init(char *addr, char *aport, char *port, int type, int flags, 
         struct bksmt_conn **ret)
 {
     struct bksmt_conn *c;
@@ -61,17 +61,22 @@ bksmt_conn_open(char *addr, char *aport, char *port, int type, int flags,
     if (c->sd == 0) 
         goto abort;
 
-    c->lazyf = CONN_ISLAZY(flags);
-
-    if (!c->lazyf && !CONN_ISUDP(type) && connect(c->sd, &(c->addr), c->addrlen))
-        goto abort;
-
     *ret = c;
     return CONN_OK;
 
 abort:
     free(c);
     return CONN_ERROR;
+}
+
+int
+bksmt_conn_open(struct bksmt_conn *c)
+{
+    assert(c != NULL);
+
+    if (connect(c->sd, &(c->addr), c->addrlen))
+        return CONN_ERROR;
+    return CONN_OK;
 }
 
 int
@@ -82,9 +87,6 @@ bksmt_conn_send(struct bksmt_conn *c, struct bksmt_buf *b,
     size_t nbytes, written;
 
     assert(nsend <= b->end - b->start);
-
-    if(c->lazyf && !CONN_ISUDP(c->type) && connect(c->sd, &(c->addr), c->addrlen))
-        goto abort;
 
     buf = xmallocarray(nsend, sizeof *buf);
     nbytes = bksmt_buf_read(b, buf, nsend * sizeof *buf);
@@ -114,9 +116,6 @@ bksmt_conn_msend(struct bksmt_conn *c, unsigned char *buf,
 
     size_t nbytes, written;
 
-    if(c->lazyf && !CONN_ISUDP(c->type) && connect(c->sd, &(c->addr), c->addrlen))
-        return CONN_ERROR;
-
     written = 0;
     while((written < nsend) && (nbytes = write(c->sd, 
                     buf + written, nsend - written))) {
@@ -133,9 +132,6 @@ bksmt_conn_mrecv(struct bksmt_conn *c, unsigned char *buf,
         size_t nrecv) {
 
     size_t nbytes, written;
-
-    if(c->lazyf && !CONN_ISUDP(c->type) && connect(c->sd, &(c->addr), c->addrlen))
-        return CONN_ERROR;
 
     written = 0;
     while((written < nrecv) && (nbytes = read(c->sd, 
@@ -158,9 +154,6 @@ bksmt_conn_recv(struct bksmt_conn *c, struct bksmt_buf *b,
     size_t nbytes, written;
 
     assert(nrecv <= b->end - b->start);
-
-    if(c->lazyf && !CONN_ISUDP(c->type) && connect(c->sd, &(c->addr), c->addrlen))
-        goto abort;
 
     buf = xmallocarray(nrecv, sizeof *buf);
 
@@ -191,10 +184,6 @@ bksmt_conn_recv_chain(struct bksmt_conn *c,
 {
     unsigned char *buf;
     size_t nbytes, written;
-
-
-    if(c->lazyf && !CONN_ISUDP(c->type) && connect(c->sd, &(c->addr), c->addrlen))
-        goto abort;
 
     buf = xmallocarray(nrecv, sizeof *buf);
 
