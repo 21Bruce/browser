@@ -27,6 +27,8 @@ int bksmt_conn_recv_chain(struct bksmt_conn *, struct bksmt_buf_chain *, size_t)
 
 void bksmt_conn_close(struct bksmt_conn *);
 
+void bksmt_conn_free(struct bksmt_conn *);
+
 /* connection type */
 #define CONN_TCP 1
 #define CONN_UDP 2

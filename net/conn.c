@@ -13,7 +13,6 @@
 #include <stdio.h>
 #include <sys/errno.h>
 
-#define CONN_ISLAZY(flags) (flags & CONN_LAZY )
 #define CONN_ISDNS(flags)  (flags & CONN_DNS  )
 
 #define CONN_ISTCP(type)  (type & CONN_TCP)
@@ -215,5 +214,11 @@ bksmt_conn_close(struct bksmt_conn *c)
 {
     assert(c != NULL);
     close(c->sd);
+}
+
+void
+bksmt_conn_free(struct bksmt_conn *c)
+{
+    assert(c != NULL);
     free(c);
 }
