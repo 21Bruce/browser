@@ -41,9 +41,9 @@ bksmt_cstrmime(char *str)
     for(i = 0; str[i] != 0; i++) {
         if (str[i] == '-') {
             sf = 1;     
+            continue;
         } else if (sf && islower(str[i])) {
             str[i] = toupper(str[i]);
-            sf = 0;
         }
         sf = 0;
     }
