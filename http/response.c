@@ -115,15 +115,10 @@ parse_header(struct bksmt_http_res *res, unsigned char *buf, size_t len)
     cptr = buf;
     end = buf + len;
 
-    if (strncasecmp(cptr, "HTTP", 4) != 0)
+    if (strncasecmp(cptr, "HTTP/", 5) != 0)
         return HTTP_RES_PARSE_ERROR;
 
-    cptr += 4;
-
-    if (cptr >= end || *cptr != '/')
-        return HTTP_RES_PARSE_ERROR;
-
-    cptr += 1;
+    cptr += 5;
 
     if (cptr >= end)
         return HTTP_RES_PARSE_ERROR;
