@@ -74,7 +74,7 @@ char *
 bksmt_cstrpctenc(char *raw)
 {
     int i, j;
-    char *ret = strdup(raw);
+    char *ret = xstrdup(raw);
 
     i = 0;
     while(ret[i] != 0) {
@@ -194,7 +194,7 @@ parse_dn(char **pstr, char **dn)
         return HTTP_URI_PARSE_ERROR;
  
     /* scan till next end */
-    *dn = strdup(*pstr);
+    *dn = xstrdup(*pstr);
     *pstr += strlen(*pstr);
     return HTTP_URI_PARSE_END;
 }
@@ -296,7 +296,7 @@ parse_fpath(char **pstr, char **fpath)
         return HTTP_URI_PARSE_ERROR;
 
     /* if we have any path scan it */
-    *fpath = strdup(*pstr);
+    *fpath = xstrdup(*pstr);
     *pstr += strlen(*pstr);
     return HTTP_URI_PARSE_END;
 }
@@ -331,7 +331,7 @@ parse_parameters(char **pstr, struct bksmt_dict **params)
                     goto perror;
                 }
                 /* scan till end of str */
-                tmpv = strdup(*pstr);
+                tmpv = xstrdup(*pstr);
                 bksmt_dict_set(*params, tmpk, tmpv);
                 stat = HTTP_URI_PARSE_END;
                 goto finish;
@@ -480,7 +480,7 @@ param:
     } 
 
 anchor:
-     dst->anchor = strdup(src);
+     dst->anchor = xstrdup(src);
      goto end;
 
 error:

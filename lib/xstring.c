@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
 #include <stdlib.h>
 #include <err.h>
 
@@ -25,4 +26,17 @@ xasprintf(char **ret, const char * restrict format, ...)
     return stat;
 }
 
+char *
+xstrdup(char *src)
+{
+    char *ret;
 
+    ret = strdup(src);
+
+    if (ret == NULL) {
+        errx(ENOMEM, "Ran out of memory");
+        exit(ENOMEM);
+    } 
+
+    return ret;
+}

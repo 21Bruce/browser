@@ -78,6 +78,7 @@ int
 bksmt_conn_open(struct bksmt_conn *c)
 {
     int family, socktype, protocol;
+
     assert(c != NULL);
 
     /* init family, only support IPv4, NON-TLS for now */
@@ -92,7 +93,7 @@ bksmt_conn_open(struct bksmt_conn *c)
     * with vars above
     */
     c->sd = socket(family, socktype, protocol);
-    if (c->sd == 0) 
+    if (c->sd == -1) 
         return CONN_ERROR;
 
     /* attempt connect() with saved info from init() */

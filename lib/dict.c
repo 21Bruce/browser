@@ -1,11 +1,14 @@
 #include "dict.h"
+
 #include "hash.h"
 #include "xmalloc.h"
+#include "xstring.h"
 
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <sys/queue.h>
+
 
 #define HASHINIT 100
 #define HASHREFILL 0.8
@@ -87,13 +90,13 @@ bksmt_dict_set(struct bksmt_dict *dict, char *key, char *val)
     for (c = dict->buckets[bidx]; c != NULL; c = c->nxt) {
         if (strcmp(key, c->key) == 0) {
             free(c->val);
-            c->val = strdup(val);
+            c->val = xstrdup(val);
             return;
         }
     }
     nc = xmalloc(sizeof *nc);
-    nc->key = strdup(key);
-    nc->val = strdup(val);
+    nc->key = xstrdup(key);
+    nc->val = xstrdup(val);
     nc->nxt = dict->buckets[bidx];
     dict->buckets[bidx] = nc;
     dict->nelem += 1;
