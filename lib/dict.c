@@ -9,7 +9,6 @@
 #include <assert.h>
 #include <sys/queue.h>
 
-
 #define HASHINIT 100
 #define HASHREFILL 0.8
 #define HASHRESIZE 2
@@ -49,7 +48,7 @@ bksmt_dict_regrow(struct bksmt_dict *dict)
 }
 
 struct bksmt_dict *
-bksmt_dict_init()
+bksmt_dict_init(void)
 {
     struct bksmt_dict *ret = xmalloc(sizeof *ret);
     ret->nbuckets = HASHINIT;
@@ -63,9 +62,11 @@ char *
 bksmt_dict_get(struct bksmt_dict *dict, char *key)
 {
     struct bksmt_dict_elem *c;
-    unsigned long idx = djb2_hash(key) % dict->nbuckets;
+    unsigned long idx;
 
     assert(dict != NULL);
+
+    idx = djb2_hash(key) % dict->nbuckets;
 
     for (c = dict->buckets[idx]; c != NULL; c = c->nxt) {
         if (strcmp(key, c->key) == 0)
@@ -116,8 +117,12 @@ bksmt_dict_clear(struct bksmt_dict *dict, char *key)
     }
 
     if (c != NULL) {
+        /* remove elem before freeing */
         if (p != NULL)
             p->nxt = c->nxt;
+        else 
+            dict->buckets[bidx] = c->nxt;
+
         free(c->key);
         free(c->val);
         LIST_REMOVE(c, elist);
@@ -137,6 +142,8 @@ bksmt_dict_free(struct bksmt_dict *dict)
     for (i = 0; i < dict->nbuckets; i++) {
         for (c = dict->buckets[i]; c != NULL; c = ctmp) {
             ctmp = c->nxt;
+            free(c->val);
+            free(c->key);
             free(c);
         }
     }
