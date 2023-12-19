@@ -199,8 +199,11 @@ bksmt_http_res_recv(struct bksmt_http_res *res, struct bksmt_conn *conn)
     unsigned char *bufbck, *tmpbuf;
 
     assert(res != NULL && conn != NULL);
+
+    /* init res body and bufbck */
     res->body = NULL;
-    
+    bufbck = "";
+
     /* find delimeter between header and body */
     /* XXX: this is REALLY inefficient, should find a better way */
     r1f = n1f = r2f = n2f = 0;
@@ -240,12 +243,12 @@ bksmt_http_res_recv(struct bksmt_http_res *res, struct bksmt_conn *conn)
     hlen = pos; 
     rbuf[pos] = 0;
 
-    /* parse headers */
+   /* parse headers */
 
     stat = parse_header(res, rbuf, hlen);
     if (stat == HTTP_RES_PARSE_ERROR) 
         return HTTP_ERROR;
-    
+
     /* parse body */
 
     /* if there are no mime fields, we have no body */
@@ -268,7 +271,6 @@ bksmt_http_res_recv(struct bksmt_http_res *res, struct bksmt_conn *conn)
 
     /* if there is a chunked transfer encoding, parse it and read it in */
     if (strcasecmp(bksmt_dict_get(res->header.mfields, "Transfer-Encoding"), "chunked") == 0) {
-        bufbck = NULL;
         for(; ;) {
             for(pos = 0, stat = bksmt_conn_mrecv(conn, chlenbuf, 1);
                     chlenbuf[pos] != '\r'; 

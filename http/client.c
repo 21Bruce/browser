@@ -196,11 +196,8 @@ void bksmt_http_client_free(struct bksmt_http_client *client)
     assert(client != NULL);
 
     /* if we have a conn, close if necessary and free */
-    if (client->conn != NULL) {
-        if (bksmt_conn_is_open(client->conn)) 
-            bksmt_conn_close(client->conn);
+    if (client->conn != NULL) 
         bksmt_conn_free(client->conn);
-    }
 
     /* if we have a cookiejar, free */
     if (client->cookiejar != NULL)

@@ -250,5 +250,7 @@ void
 bksmt_conn_free(struct bksmt_conn *c)
 {
     assert(c != NULL);
+    if (bksmt_conn_is_open(c))
+        bksmt_conn_close(c);
     free(c);
 }
