@@ -9,6 +9,7 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -362,4 +363,32 @@ bksmt_http_res_send(struct bksmt_http_res *res, struct bksmt_conn *conn)
     }
 
     return HTTP_OK;
+}
+
+void
+bksmt_http_res_clear(struct bksmt_http_res *res)
+{
+    assert(res != NULL);
+
+    if (res->header.mfields) 
+        bksmt_dict_free(res->header.mfields);
+
+    if (res->body)
+        switch(res->body->type) {
+        case BUF_MDYNA:
+            free(res->body->inf.mbuf);
+            return;
+        case BUF_FILE:
+            close(res->body->inf.fd);
+            return;
+        }
+}
+
+void
+bksmt_http_res_free(struct bksmt_http_res *res)
+{
+    assert(res != NULL);
+
+    bksmt_http_res_clear(res);
+    free(res);
 }

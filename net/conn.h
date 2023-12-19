@@ -11,9 +11,11 @@
 struct bksmt_conn;
 
 
-int bksmt_conn_init(char *, char *, char *, int, int, struct bksmt_conn **);
+int bksmt_conn_init(char *, char *, int, int, struct bksmt_conn **);
 
 int bksmt_conn_open(struct bksmt_conn *);
+
+#define bksmt_conn_is_open(conn) (conn->sd != -1)
 
 int bksmt_conn_send(struct bksmt_conn *, struct bksmt_buf *, size_t);
 

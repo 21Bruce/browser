@@ -20,7 +20,7 @@
 #define CONN_ISTLS(type)  (type & CONN_TLS)
 
 int
-bksmt_conn_init(char *addr, char *aport, char *port, int type, int flags, 
+bksmt_conn_init(char *addr, char *port, int type, int flags, 
         struct bksmt_conn **ret)
 {
     struct bksmt_conn *c;
@@ -56,16 +56,17 @@ bksmt_conn_init(char *addr, char *aport, char *port, int type, int flags,
         freeaddrinfo(paddr);
     } else {
         /*
-         * otherwise, convert the aport
+         * otherwise, convert the port
          * and addr to nbo and use those
          */
         c->addrlen = sizeof (c->addr); 
         c->addr.sin_family = htons(AF_INET);
-        c->addr.sin_port = htons(cstrtoint(aport));
+        c->addr.sin_port = htons(cstrtoint(port));
         if (inet_pton(family, addr, &(c->addr.sin_addr)) != 1) 
             goto abort;
    }
 
+    c->sd = -1;
     *ret = c;
     return CONN_OK;
 
@@ -242,6 +243,7 @@ bksmt_conn_close(struct bksmt_conn *c)
 {
     assert(c != NULL);
     close(c->sd);
+    c->sd = -1;
 }
 
 void

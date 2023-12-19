@@ -48,7 +48,8 @@ struct bksmt_http_req {
     struct bksmt_buf             *body;
 }; 
 
-int bksmt_http_req_parse(struct bksmt_buf *, struct bksmt_http_req *);
+
+int bksmt_http_req_init(char *, int, struct bksmt_buf *, int, struct bksmt_http_req **);
 
 int bksmt_http_req_send(struct bksmt_http_req *, struct bksmt_conn *);
 
@@ -57,5 +58,10 @@ int bksmt_http_req_recv(struct bksmt_conn *, struct bksmt_http_req *);
 void bksmt_http_req_clear(struct bksmt_http_req *);
 
 void bksmt_http_req_free(struct bksmt_http_req *);
+
+/* init flags */
+
+/* do not create mime fields */
+#define BKSMT_HTTP_REQ_NOMIME 0x1
 
 #endif

@@ -3,18 +3,62 @@
 #include "../lib/dict.h"
 #include "../lib/buf.h"
 #include "../lib/xstring.h"
+#include "../lib/xmalloc.h"
 #include "http.h"
+#include "uri.h"
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <unistd.h>
 #include <string.h>
 #include <assert.h>
 
-#define KB(x) ((x)*1000)
+int
+bksmt_http_req_init(char *uri, int verbk, struct bksmt_buf *body, int flags, struct bksmt_http_req **rreq)
+{
+    struct bksmt_uri *ustct;
+    struct bksmt_http_req *req;
 
-#define RECV_BUF_SIZE (KB(8))
+    assert(uri != NULL);
+    assert(0 <= verbk && verbk <= 8);
 
-#define SEND_BUF_SIZE (KB(1))
+    ustct = xmalloc(sizeof *ustct);
+    if (bksmt_uri_parse(ustct, uri) != HTTP_OK) {
+        bksmt_uri_free(ustct);
+        return HTTP_ERROR;
+    }
+   
+    /* alloc and fill a standard request */
+    req = xmalloc(sizeof *req);
+    req->header.verbk = verbk;
+    bksmt_uri_build(ustct, &(req->header.fpath), 0);
+    /* XXX: default to 1.1 for now */
+    req->header.vminor = 1;
+    req->header.vmajor = 1;
+    req->header.mfields = bksmt_dict_init();
+    req->body = body;
+
+    /* if we don't want mime, quit here */
+    if (BKSMT_HTTP_REQ_NOMIME & flags) {
+        bksmt_uri_free(ustct);
+        *rreq = req;
+        return HTTP_OK;
+    }
+
+
+    /* set mime headers */
+    bksmt_dict_set(req->header.mfields, "Host", ustct->dn);
+    if (ustct->fpath == NULL)
+        bksmt_dict_set(req->header.mfields, "Filename", "/");
+    else 
+        bksmt_dict_set(req->header.mfields, "Filename", ustct->fpath);
+    bksmt_dict_set(req->header.mfields, "Scheme", bksmt_http_prot_lut[ustct->protocolk].prot);
+
+    /* free residual uri struct and return */
+    bksmt_uri_free(ustct);
+    *rreq = req;
+    return HTTP_OK;
+}
 
 int
 bksmt_http_req_send(struct bksmt_http_req *req, struct bksmt_conn *conn)
@@ -100,6 +144,9 @@ void
 bksmt_http_req_clear(struct bksmt_http_req *req)
 {
     assert(req != NULL);
+
+    if (req->header.fpath)
+        free(req->header.fpath);
 
     if (req->header.mfields) 
         bksmt_dict_free(req->header.mfields);
