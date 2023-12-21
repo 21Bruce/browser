@@ -1,0 +1,15 @@
+* HTTP res and req headers can repeat if they are a
+  comma separated list, so instead of rewriting dict
+  abstraction, make new abstraction on res/req headers
+  that intercepts attempts at making repeat headers into
+  comma separated lists.
+
+* Implement in-mem cookie subsystem of client
+
+* Implement redirect algorithm
+
+* Implement TLS 
+
+* Implement upgrade algorithm 
+
+* MAYBE: implement HTTP/2 & HTTP/3

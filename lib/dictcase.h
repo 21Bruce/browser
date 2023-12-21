@@ -1,6 +1,11 @@
 #ifndef __BKSMT_LIB_DICTCASE_H__
 #define __BKSMT_LIB_DICTCASE_H__
 
+/*
+ * A dictcase is a map of string keys to dictionary vals, 
+ * basically a data structure that labels dictionaries
+ */
+
 #include <stdlib.h>
 
 #include "dict.h"

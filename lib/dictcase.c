@@ -11,9 +11,9 @@
 #define HASHINIT 100
 #define HASHREFILL 0.8
 #define HASHRESIZE 2
-#define HASHCAP(dict) ((float)(dictcase->nelem)/(float)(dictcase->nbuckets))
+#define HASHCAP(dictcase) ((float)(dictcase->nelem)/(float)(dictcase->nbuckets))
 
-static void bksmt_dict_regrow(struct bksmt_dictcase *);
+static void bksmt_dictcase_regrow(struct bksmt_dictcase *);
 
 static void
 bksmt_dictcase_regrow(struct bksmt_dictcase *dictcase)
