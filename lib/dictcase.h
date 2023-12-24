@@ -7,19 +7,22 @@
  */
 
 #include <stdlib.h>
+#include <sys/queue.h>
 
 #include "dict.h"
 
 struct bksmt_dictcase_elem {
-    char                       *key;
-    struct bksmt_dict          *val;
-    struct bksmt_dictcase_elem *nxt;
+    LIST_ENTRY(bksmt_dictcase_elem)  elist;
+    char                            *key;
+    struct bksmt_dict               *val;
+    struct bksmt_dictcase_elem      *nxt;
 };
 
 struct bksmt_dictcase {
-    size_t                        nbuckets;
-    struct bksmt_dictcase_elem  **buckets;
-    size_t                        nelem;
+    LIST_HEAD(, bksmt_dictcase_elem)  elems;
+    size_t                            nbuckets;
+    struct bksmt_dictcase_elem      **buckets;
+    size_t                            nelem;
 };
 
 struct bksmt_dictcase *bksmt_dictcase_init(void);
@@ -32,5 +35,8 @@ void                   bksmt_dictcase_free(struct bksmt_dictcase *);
 
 /* do not create if dict is not found */
 #define BKSMT_DICTCASE_NCREAT 0x1
+
+#define BKSMT_DICTCASE_FOREACH(dictcase, e) \
+    LIST_FOREACH(e, &((dictcase)->elems), elist)
 
 #endif /* __BKSMT_LIB_DICTCASE_H__ */

@@ -55,6 +55,7 @@ bksmt_dictcase_init(void)
     ret->nbuckets = HASHINIT;
     ret->buckets = xzallocarray(ret->nbuckets, sizeof *(ret->buckets));
     ret->nelem = 0;
+    LIST_INIT(&(ret->elems));
     return ret;
 }
 
@@ -90,6 +91,7 @@ bksmt_dictcase_get(struct bksmt_dictcase *dictcase, char *key, int flags)
     nc->nxt = dictcase->buckets[idx];
     dictcase->buckets[idx] = nc;
     dictcase->nelem += 1;
+    LIST_INSERT_HEAD(&(dictcase->elems), nc, elist);
 
     /* return fresh dict */
     return nc->val;
@@ -127,6 +129,7 @@ bksmt_dictcase_set(struct bksmt_dictcase *dictcase, char *key, struct bksmt_dict
     nc->nxt = dictcase->buckets[idx];
     dictcase->buckets[idx] = nc;
     dictcase->nelem += 1;
+    LIST_INSERT_HEAD(&(dictcase->elems), nc, elist);
 
 }
 
@@ -151,6 +154,7 @@ bksmt_dictcase_clear(struct bksmt_dictcase *dictcase, char *key)
 
         free(c->key);
         bksmt_dict_free(c->val);
+        LIST_REMOVE(c, elist);
         free(c);
         dictcase->nelem -= 1;
     }
