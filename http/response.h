@@ -3,6 +3,7 @@
 
 #include "http.h"
 #include "../lib/dict.h"
+#include "../lib/dictcase.h"
 #include "../lib/buf.h"
 #include "../net/conn.h"
 
@@ -142,17 +143,21 @@ static struct bksmt_http_status_lut_entry {
     {511, "511", "Network Authentication Required", 31},
 };
 
+/* NOTE: Use cookies dictcase inf over setting 'Set-Cookie' header directly */
 struct bksmt_http_res_header {
     int vminor;
     int vmajor;
     int statk;
     struct bksmt_dict *mfields;
+    struct bksmt_dictcase *cookies;
 };
 
 struct bksmt_http_res {
     struct bksmt_http_res_header header;
     struct bksmt_buf *body;
 };
+
+struct bksmt_http_res *bksmt_http_res_init(void);
 
 int bksmt_http_res_send(struct bksmt_http_res *, struct bksmt_conn *);
 

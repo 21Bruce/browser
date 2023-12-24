@@ -14,16 +14,13 @@ int parse_cookie(char * , struct bksmt_dict **);
  */
 int build_cookie(struct bksmt_dict *, char **);
 
-/* 
- * this is for the 'Cookie' header, 
- * use build_cookie and a foreach for 'Set-Cookie' 
- */
-int build_cookies(struct bksmt_dictcase *, char **);
 
 /* cookie stat returns */
 
 #define COOKIE_OK    1
 #define COOKIE_ERROR 2
+
+/* cookie build flags */
 
 #endif /* __BKSMT_HTTP_COOKIE_H__ */
 

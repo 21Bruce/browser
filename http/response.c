@@ -6,6 +6,7 @@
 #include "../lib/xmalloc.h"
 #include "mime.h"
 #include "http.h"
+#include "cookie.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -112,6 +113,8 @@ static int
 parse_header(struct bksmt_http_res *res, unsigned char *buf, size_t len) 
 {
     char *cptr, *end, *fdot, *nws, *ncrlf, *fdcrlf, *ncol, *tmpk, *tmpv;
+    struct bksmt_dict *cookie;
+    int stat;
 
     cptr = buf;
     end = buf + len;
@@ -158,34 +161,82 @@ parse_header(struct bksmt_http_res *res, unsigned char *buf, size_t len)
 
     cptr = ncrlf + 2;
 
-    // since we are 0 terminated at last /n
+    /* since we are 0 terminated at last \n */
     fdcrlf = strstr(cptr, "\r\n\r");
     if (fdcrlf == NULL)
         return HTTP_RES_PARSE_ERROR;
 
-    res->header.mfields = bksmt_dict_init();
+    /* init header and cookie data structures if they aren't */
+    if (res->header.mfields == NULL)
+        res->header.mfields = bksmt_dict_init();
+
+    if (res->header.cookies == NULL)
+        res->header.cookies = bksmt_dictcase_init();
+
+    /* loop for each header, and at the start of loop, find next CRLF */
+    /* the next CRLF is the position where the current header ends */
     while((ncrlf = strstr(cptr, "\r\n"))) {
+        /* find delim btwn key and val */
         ncol = strchr(cptr, ':');
+
+        /* if we moved cursor passed the current CRLF, err */
         if (ncol == NULL || ncol > ncrlf)
-            goto derror;
+            goto kerror;
+
+        /* copy key into dynamic buffer */
         xasprintf(&tmpk, "%.*s", ncol - cptr, cptr);
+
+        /* move cursor past whitespace */
         cptr = adv_ws(ncol + 1, end);
+
+        /* if cursor ends at CRLF, no value, so err */
         if (cptr == ncrlf) 
             goto verror;
+
+        /* copy value into dynamic buffer */
         xasprintf(&tmpv, "%.*s", ncrlf - cptr, cptr);
+
+        /* transform key into canonical mime form */
         bksmt_cstrmime(tmpk);
-        bksmt_dict_set(res->header.mfields, tmpk, tmpv);
+
+        /* check if this is 'Set-Cookie' special case. 
+         * multiple 'Set-Cookie' headers can be attached
+         * to one response message, and they CAN NOT 
+         * be collapsed into one header k-v pair 
+         * according to RFC 7230.
+         */
+        if (strcmp("Set-Cookie", tmpk) == 0) {
+            stat = parse_cookie(tmpv, &cookie);
+            if (stat != COOKIE_OK)
+                goto cerror;
+            /* add cookie to cookie dictcase labelled under 'Name' */ 
+            bksmt_dictcase_set(res->header.cookies, 
+                    bksmt_dict_get(cookie, "Name"), cookie);
+        } else {
+            bksmt_dict_set(res->header.mfields, tmpk, tmpv);
+        }
+
+        /* release dynam buffers */
         free(tmpk);
         free(tmpv);
+
+        /* move cursor to start of next header */
         cptr = ncrlf + 2;
     }
     return HTTP_RES_PARSE_OK;
 
+cerror:
+    /* cookie parsing error, we already have value and key */
+    free(tmpv);
 verror:
+    /* value error, we already have key */
     free(tmpk);
-derror:
+kerror:
+    /* key error, we only have initted resources */
     bksmt_dict_free(res->header.mfields);
+    bksmt_dict_free(res->header.cookies);
     res->header.mfields = NULL;
+    res->header.cookies = NULL;
     return HTTP_RES_PARSE_ERROR;
 }
 
@@ -319,6 +370,7 @@ bksmt_http_res_send(struct bksmt_http_res *res, struct bksmt_conn *conn)
     size_t tmpstrlen;
     struct bksmt_http_status_lut_entry sk;
     struct bksmt_dict_elem *e;
+    struct bksmt_dictcase_elem *de;
     int stat;
 
     assert(res != NULL);
@@ -348,6 +400,23 @@ bksmt_http_res_send(struct bksmt_http_res *res, struct bksmt_conn *conn)
             stat = bksmt_conn_msend(conn, tmpstr, tmpstrlen);
             free(tmpstr);
             if (stat == CONN_ERROR) 
+                return HTTP_ERROR;
+        }
+    }
+
+    /* send cookies */
+    if (res->header.cookies) {
+        BKSMT_DICTCASE_FOREACH(res->header.cookies, de) {
+            /* build cookie value str */
+            stat = build_cookie(de->val, &tmpstr);
+            if (stat == COOKIE_ERROR) 
+                return HTTP_ERROR;
+            /* build cookie header line */
+            tmpstrlen = xasprintf(&tmpstr, "Set-Cookie: %s\r\n", tmpstr);
+            /* send cookie header line */
+            stat = bksmt_conn_msend(conn, tmpstr, tmpstrlen);
+            free(tmpstr);
+            if (stat == CONN_ERROR)
                 return HTTP_ERROR;
         }
     }
