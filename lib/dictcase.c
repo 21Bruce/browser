@@ -95,6 +95,41 @@ bksmt_dictcase_get(struct bksmt_dictcase *dictcase, char *key, int flags)
     return nc->val;
 }
 
+void
+bksmt_dictcase_set(struct bksmt_dictcase *dictcase, char *key, struct bksmt_dict *val) 
+{
+    struct bksmt_dictcase_elem *c, *nc;
+    unsigned long idx;
+
+    assert(dictcase != NULL);
+
+    /* find hash using djb2 */
+    idx = djb2_hash(key) % dictcase->nbuckets;
+
+    /* if there is a dict return it */
+    for(c = dictcase->buckets[idx]; c != NULL; c = c->nxt) {
+        if (strcmp(key, c->key) == 0) {
+            bksmt_dict_free(c->val);
+            c->val = val;
+            return;
+        }
+
+    }
+
+    /* check for regrow */
+    if (HASHCAP(dictcase) >= HASHREFILL)
+        bksmt_dictcase_regrow(dictcase);
+
+    /* create new elem */
+    nc = xmalloc(sizeof *nc);
+    nc->key = xstrdup(key);
+    nc->val = val;
+    nc->nxt = dictcase->buckets[idx];
+    dictcase->buckets[idx] = nc;
+    dictcase->nelem += 1;
+
+}
+
 void 
 bksmt_dictcase_clear(struct bksmt_dictcase *dictcase, char *key)
 {

@@ -24,6 +24,7 @@ struct bksmt_dictcase {
 
 struct bksmt_dictcase *bksmt_dictcase_init(void);
 struct bksmt_dict     *bksmt_dictcase_get(struct bksmt_dictcase *, char *, int);
+void                   bksmt_dictcase_set(struct bksmt_dictcase *, char *, struct bksmt_dict *);
 void                   bksmt_dictcase_clear(struct bksmt_dictcase *, char *);
 void                   bksmt_dictcase_free(struct bksmt_dictcase *);
 

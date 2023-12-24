@@ -7,6 +7,7 @@
 
 #include <string.h>
 #include <assert.h>
+#include <stdio.h>
 
 /* parse locals */
 static char *adv_ws(char *);
@@ -21,16 +22,14 @@ adv_ws(char *src)
 }
 
 int
-parse_cookie(struct bksmt_dictcase *cstore, char *src)
+parse_cookie(char *src, struct bksmt_dict **cookie)
 {
     char *nxteq, *nxtscol, *tmpk, *tmpv;
-    struct bksmt_dict *cookie;
 
     assert(src != NULL);
-    assert(cstore != NULL);
+    assert(cookie != NULL);
 
-    /* init cookie dict to null */
-    cookie = NULL;
+    *cookie = bksmt_dict_init();
 
     /* loop through cookie attrs, each attr has = but not necessarily ; */
     while((nxteq = strchr(src, '=')) != NULL) {
@@ -64,14 +63,13 @@ parse_cookie(struct bksmt_dictcase *cstore, char *src)
         else 
             xasprintf(&tmpv, "%.*s", nxtscol - src, src);
 
-        /* if we haven't initted cookie dict, use this k-v pair */
-        if (cookie == NULL) {
-            cookie = bksmt_dictcase_get(cstore, tmpk, 0);
-            bksmt_dict_set(cookie, "Name", tmpk);
-            bksmt_dict_set(cookie, "Value", tmpv);
+        /* if no 'Name' field, use this k-v */
+        if (bksmt_dict_get(*cookie, "Name") == NULL) {
+            bksmt_dict_set(*cookie, "Name", tmpk);
+            bksmt_dict_set(*cookie, "Value", tmpv);
         } else {
-        /* otherwise, set k-v for this cookie */
-            bksmt_dict_set(cookie, tmpk, tmpv);
+        /* otherwise, this is a attr for this cookie */
+            bksmt_dict_set(*cookie, tmpk, tmpv);
         }
 
         /* release dynam buffers */
@@ -86,17 +84,45 @@ parse_cookie(struct bksmt_dictcase *cstore, char *src)
         src = nxtscol + 1;
     }
 
+    if (bksmt_dict_get(*cookie, "Name") == NULL)
+        goto kerror;
+
     return COOKIE_OK;
 
 verror:
+    /* error getting val */
     free(tmpk);
 kerror:
     /* error getting key */
-
-    /* destory cookie if initted */
-    if (cookie != NULL) { 
-        tmpk = bksmt_dict_get(cookie, "Name");
-        bksmt_dictcase_clear(cstore, tmpk);
-    }
+    bksmt_dict_free(*cookie);
+    *cookie = NULL;
     return COOKIE_ERROR;
 }
+
+int
+build_cookie(struct bksmt_dict *cookie, char **ret)
+{
+    struct bksmt_dict_elem *e;
+    char *name, *val;
+
+    assert(cookie != NULL);
+
+    /* if Name or Value is missing this is not a valid cookie */
+
+    if ((name = bksmt_dict_get(cookie, "Name")) == NULL)
+        return COOKIE_ERROR;
+
+    if ((val = bksmt_dict_get(cookie, "Value")) == NULL)
+        return COOKIE_ERROR;
+
+    xasprintf(ret, "%s=%s", name, val);
+
+    /* loop through remaining attrs and append */
+    BKSMT_DICT_FOREACH(cookie, e)
+        if (strcmp(e->key, "Name") && strcmp(e->key, "Value"))
+            xasprintf(ret, "%s; %s=%s", *ret, e->key, e->val);
+
+    return COOKIE_OK;
+}
+
+
