@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "dict.h"
 #include "hash.h"
@@ -157,6 +158,34 @@ bksmt_dictcase_clear(struct bksmt_dictcase *dictcase, char *key)
         LIST_REMOVE(c, elist);
         free(c);
         dictcase->nelem -= 1;
+    }
+}
+void
+bksmt_dictcase_apply(struct bksmt_dictcase *dst, struct bksmt_dictcase *src)
+{
+    struct bksmt_dict *dcdict;
+    struct bksmt_dictcase_elem *e;
+
+    if (src == NULL || dst == NULL)
+        return;
+
+    BKSMT_DICTCASE_FOREACH(src, e) {
+        dcdict = bksmt_dictcase_get(dst, e->key, 0);
+        bksmt_dict_apply(dcdict, e->val);
+    }
+}
+
+void
+bksmt_dictcase_print(struct bksmt_dictcase *src)
+{
+    struct bksmt_dictcase_elem *de;
+
+    if (src == NULL)
+        return;
+
+    BKSMT_DICTCASE_FOREACH(src, de) {
+        fprintf(stderr, "%s: \n", de->key);
+        bksmt_dict_print(de->val);
     }
 }
 

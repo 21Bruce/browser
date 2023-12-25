@@ -448,6 +448,9 @@ bksmt_http_res_clear(struct bksmt_http_res *res)
     if (res->header.mfields) 
         bksmt_dict_free(res->header.mfields);
 
+    if (res->header.cookies) 
+        bksmt_dictcase_free(res->header.cookies);
+
     if (res->body)
         switch(res->body->type) {
         case BUF_MDYNA:

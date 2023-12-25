@@ -5,6 +5,7 @@
 #include "xstring.h"
 
 #include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <sys/queue.h>
@@ -129,6 +130,29 @@ bksmt_dict_clear(struct bksmt_dict *dict, char *key)
         free(c);
         dict->nelem -= 1;
     }
+}
+
+void
+bksmt_dict_apply(struct bksmt_dict *dst, struct bksmt_dict *src)
+{
+    struct bksmt_dict_elem *e;
+
+    assert(dst != NULL && src != NULL);
+
+    BKSMT_DICT_FOREACH(src, e)
+        bksmt_dict_set(dst, e->key, e->val);
+}
+
+void 
+bksmt_dict_print(struct bksmt_dict *src)
+{
+    struct bksmt_dict_elem *e;
+
+    if (src == NULL)
+        return; 
+
+    BKSMT_DICT_FOREACH(src, e)
+        fprintf(stderr, "%s: %s\n", e->key, e->val);
 }
 
 void

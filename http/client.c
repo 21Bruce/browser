@@ -4,6 +4,7 @@
 #include "../lib/buf.h"
 #include "../lib/dict.h"
 #include "../lib/dictcase.h"
+#include "../lib/llkv.h"
 #include "http.h"
 #include "uri.h"
 #include "request.h"
@@ -23,7 +24,7 @@ bksmt_http_client_init()
 
     client = xzalloc(sizeof *client);
     client->conn = NULL;
-    client->cookiejar = bksmt_dictcase_init(); 
+    client->cookiejar = bksmt_llkv_init(); 
     return client;
 }
 
@@ -32,9 +33,11 @@ bksmt_http_client_do(struct bksmt_http_client *client,
         struct bksmt_http_req *req, int flags, struct bksmt_http_res **res)
 {
 
-    char *domain, *scheme, *port, *cfield;
+    char *domain, *scheme, *port, *cfield, *auth, *cookief, *val;
     struct bksmt_uri *uri;
     struct bksmt_http_prot_lut_entry he;
+    struct bksmt_dictcase *cookies;
+    struct bksmt_dictcase_elem *dce;
     int stat, conntype, connflags;
 
     assert(client != NULL);
@@ -43,10 +46,15 @@ bksmt_http_client_do(struct bksmt_http_client *client,
 
 
     /* init vars */
+    cookief = NULL;
     uri = NULL;
     port = NULL;
     connflags = 0;
 
+    /* init mfields for cookie */
+    if (!req->header.mfields)
+        req->header.mfields = bksmt_dict_init();
+ 
     /* 
      * we first have to figure out address of receiver. 
      * in order to do this, we need to first analyze 
@@ -60,9 +68,6 @@ bksmt_http_client_do(struct bksmt_http_client *client,
      * form and we have to look in mime fields also 
      */
     if (req->header.fpath[0] == '/' || req->header.fpath[0] == '*') {
-        /* if no mfields, we have no way of discerning receiver */
-        if (req->header.mfields == NULL) 
-            return HTTP_ERROR;
 
         /* look for host */
         domain = bksmt_dict_get(req->header.mfields, "Host");
@@ -146,12 +151,28 @@ bksmt_http_client_do(struct bksmt_http_client *client,
         client->cport = xstrdup(port);
     }
 
+    /* make authority, we use this as key in llkv */
+    xasprintf(&auth, "%s://%s:%s", client->cscheme, client->cdomain, client->cport);
+
+    /* make cookie header */
+    cookies = bksmt_llkv_get(client->cookiejar, auth, 0);
+    BKSMT_DICTCASE_FOREACH(cookies, dce) {
+        val = bksmt_dict_get(dce->val, "Value");
+        if (cookief == NULL)
+            xasprintf(&cookief, "%s=%s", dce->key, val); 
+        else
+            xasprintf(&cookief, "%s; %s=%s", dce->key, val); 
+    }
+
+    if (cookief != NULL)
+        bksmt_dict_set(req->header.mfields, "Cookie", cookief);
+ 
     /* open conn if closed */
     if (!bksmt_conn_is_open(client->conn)) {
         stat = bksmt_conn_open(client->conn);
         if (stat != CONN_OK) {
             stat = HTTP_ERROR;
-            goto abort;
+            goto abort1;
         }
     }
 
@@ -159,7 +180,7 @@ bksmt_http_client_do(struct bksmt_http_client *client,
     stat = bksmt_http_req_send(req, client->conn);
     if (stat != CONN_OK) {
         stat = HTTP_ERROR;
-        goto abort;
+        goto abort1;
     }
 
     /* alloc res and recv  */
@@ -167,7 +188,7 @@ bksmt_http_client_do(struct bksmt_http_client *client,
     stat = bksmt_http_res_recv(*res, client->conn);
     if (stat != CONN_OK) {
         stat = HTTP_ERROR;
-        goto abort1;
+        goto abort2;
     }
 
     cfield = bksmt_dict_get((*res)->header.mfields, "Connection");
@@ -175,11 +196,19 @@ bksmt_http_client_do(struct bksmt_http_client *client,
     if (cfield == NULL || strcasecmp(cfield, "close") == 0) 
         bksmt_conn_close(client->conn);
 
+    if ((*res)->header.cookies != NULL && !(flags & HTTP_CLIENT_DO_NOCOOK)) {
+        bksmt_dictcase_apply(cookies, (*res)->header.cookies);
+        /* no longer need this */
+        free(auth);
+    }
+
     stat = HTTP_OK;
     goto done;
  
-abort1:
+abort2:
     bksmt_http_res_free(*res);
+abort1:
+    free(auth);
 abort:
     if (client->conn) 
         bksmt_conn_free(client->conn);
@@ -201,7 +230,7 @@ void bksmt_http_client_free(struct bksmt_http_client *client)
 
     /* if we have a cookiejar, free */
     if (client->cookiejar != NULL)
-        bksmt_dictcase_free(client->cookiejar);
+        bksmt_llkv_free(client->cookiejar);
 
     /* free all conn tracking state */
     if (client->cdomain)
