@@ -199,9 +199,9 @@ bksmt_http_client_do(struct bksmt_http_client *client,
     if ((*res)->header.cookies != NULL && !(flags & HTTP_CLIENT_DO_NOCOOK)) {
         bksmt_dictcase_apply(cookies, (*res)->header.cookies);
         /* no longer need this */
-        free(auth);
     }
 
+    free(auth);
     stat = HTTP_OK;
     goto done;
  
