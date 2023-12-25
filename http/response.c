@@ -254,6 +254,7 @@ bksmt_http_res_recv(struct bksmt_http_res *res, struct bksmt_conn *conn)
     /* init res body and bufbck */
     res->body = NULL;
     bufbck = "";
+    blen = 0;
 
     /* find delimeter between header and body */
     /* XXX: this is REALLY inefficient, should find a better way */
@@ -337,6 +338,9 @@ bksmt_http_res_recv(struct bksmt_http_res *res, struct bksmt_conn *conn)
                 stat = bksmt_conn_mrecv(conn, rbuf, 2);
                 if (stat == CONN_ERROR) 
                     goto error;
+                /* if there were no chunks, do not init a buf */
+                if (blen == 0)
+                    return HTTP_OK;
                 res->body = bksmt_buf_init();
                 BKSMT_BUF_ATTACH(res->body, BUF_MDYNA, bufbck, 0, blen); 
                 return HTTP_OK;
