@@ -59,8 +59,8 @@ main(int argc, char *argv[])
         }
 
     if (res->body)
-        printf("%s.*\n", res->body->end - res->body->start,
-                res->body->inf.mbuf + res->body->start);
+        for(i = res->body->start; i < res->body->end; i++)
+            printf("%c", res->body->inf.mbuf[i]);
 
     return 0;
 }
