@@ -31,33 +31,50 @@ parse_cookie(char *src, struct bksmt_dict **cookie)
 
     *cookie = bksmt_dict_init();
 
-    /* loop through cookie attrs, each attr has = but not necessarily ; */
-    while((nxteq = strchr(src, '=')) != NULL) {
-
+    /* loop while still looking for cookies */
+    while (1) {
         /* init tmp buffers */
         tmpk = NULL;
         tmpv = NULL;
  
-        /* adv cursor through ws */
+        nxteq = strchr(src, '=');
+        nxtscol = strchr(src, ';');
         src = adv_ws(src);
 
-        /* if cursor is at eq, then key = ws, so err */
-        if (src == nxteq)
-            goto kerror;
+        /* special case: no value attr */
+        if (nxteq == NULL || (nxtscol != NULL && nxtscol < nxteq)) {
+            /* if this is not attr, we fail, since name must be non-empty */
+            if (bksmt_dict_get(*cookie, "Name") == NULL)
+                goto kerror;
+            /* if we are at nxtscol, this means we have ;   ;, so fail */
+            if (src == nxtscol)
+                goto kerror;
 
-        /* cpy key into dynam buffer */
-        xasprintf(&tmpk, "%.*s", nxteq - src, src);
+            /* if no next semicol, cpy to end. else, cpy to semicol */
+            if (nxtscol == NULL) 
+                xasprintf(&tmpk, "%s", src);
+            else 
+                xasprintf(&tmpk, "%.*s", nxtscol - src, src);
 
-        /* move cursor past equal, we don't need adv_ws since RFC says no ws here*/
-        src = nxteq + 1;
+            /* set tmpv buffer to empty str */
+            xasprintf(&tmpv, "");
+        } else {
+            /* if cursor is at eq, then we have ;  =val; , so err */
+            if (src == nxteq)
+                goto kerror;
 
-        nxtscol = strchr(src, ';');
+            /* cpy key into dynam buffer */
+            xasprintf(&tmpk, "%.*s", nxteq - src, src);
 
-        /* if no next semicol, cpy to end. else, cpy to semicol */
-        if (nxtscol == NULL) 
-            xasprintf(&tmpv, "%s", src);
-        else 
-            xasprintf(&tmpv, "%.*s", nxtscol - src, src);
+            /* move cursor past equal, we don't need adv_ws since RFC says no ws here*/
+            src = nxteq + 1;
+
+            /* if no next semicol, cpy to end. else, cpy to semicol */
+            if (nxtscol == NULL) 
+                xasprintf(&tmpv, "%s", src);
+            else 
+                xasprintf(&tmpv, "%.*s", nxtscol - src, src);
+        }
 
         /* if no 'Name' field, use this k-v */
         if (bksmt_dict_get(*cookie, "Name") == NULL) {
@@ -112,8 +129,12 @@ build_cookie(struct bksmt_dict *cookie, char **ret)
 
     /* loop through remaining attrs and append */
     BKSMT_DICT_FOREACH(cookie, e)
-        if (strcmp(e->key, "Name") && strcmp(e->key, "Value"))
-            xasprintf(ret, "%s; %s=%s", *ret, e->key, e->val);
+        if (strcmp(e->key, "Name") && strcmp(e->key, "Value")) {
+            if (*val == 0)
+                xasprintf(ret, "%s; %s", *ret, e->key);
+            else
+                xasprintf(ret, "%s; %s=%s", *ret, e->key, e->val);
+        }
 
     return COOKIE_OK;
 }
