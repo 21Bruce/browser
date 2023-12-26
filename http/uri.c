@@ -369,24 +369,22 @@ pquit:
 }
 
 int 
-bksmt_uri_parse(struct bksmt_uri *dst, char *src)
+bksmt_uri_parse(char *src, struct bksmt_uri **dst)
 {
     char *end;
     int stat, protk, port;
     struct bksmt_dict *params;
     struct bksmt_dict_elem *e;
+    struct bksmt_uri *ret;
 
     assert(dst != NULL);
 
-    /* clear all fields of the dst uri struct */
-    dst->dn = dst->fpath = dst->anchor = NULL;
-    dst->parameters = NULL;
-    dst->port = 0;
+    ret = xmalloc(sizeof *ret);
 
     end = strlen(src) + src;
 
     /* start by parsing protocol */
-    stat = parse_prot(&src, &(dst->protocolk));
+    stat = parse_prot(&src, &(ret->protocolk));
     switch(stat){
     case HTTP_URI_PARSE_NOPROT:
         break;
@@ -400,7 +398,7 @@ bksmt_uri_parse(struct bksmt_uri *dst, char *src)
     }    
 
     /* only choice if no err is to parse dn */
-    stat = parse_dn(&src, &(dst->dn));
+    stat = parse_dn(&src, &(ret->dn));
     switch(stat){
     case HTTP_URI_PARSE_ERROR:
         goto error;
@@ -426,7 +424,7 @@ bksmt_uri_parse(struct bksmt_uri *dst, char *src)
     }
 
 port:    
-    stat = parse_port(&src, &(dst->port));
+    stat = parse_port(&src, &(ret->port));
     switch(stat) {
     case HTTP_URI_PARSE_PARAM:
         if (src + 1 >= end)
@@ -447,7 +445,7 @@ port:
     }
  
 path:
-    stat = parse_fpath(&src, &(dst->fpath));
+    stat = parse_fpath(&src, &(ret->fpath));
     switch(stat) {
     case HTTP_URI_PARSE_ERROR:
         goto error;
@@ -466,7 +464,7 @@ path:
     } 
 
 param:
-    stat = parse_parameters(&src, &(dst->parameters));
+    stat = parse_parameters(&src, &(ret->parameters));
     switch(stat) {
     case HTTP_URI_PARSE_ANCHOR:
         if (src + 1 >= end)
@@ -480,14 +478,15 @@ param:
     } 
 
 anchor:
-     dst->anchor = xstrdup(src);
+     ret->anchor = xstrdup(src);
      goto end;
 
 error:
-     bksmt_uri_clear(dst);
+     bksmt_uri_free(ret);
      return HTTP_ERROR;
 
 end:
+     *dst = ret;
      return HTTP_OK;
 }
 
@@ -504,7 +503,7 @@ bksmt_uri_build(struct bksmt_uri *uri, char **ret, int flags)
     assert(uri->dn != NULL);
     assert(uri->protocolk < 2);
 
-    /* fill prootcol */
+    /* fill protocol */
     p = bksmt_http_prot_lut[uri->protocolk];
     xasprintf(ret, "%.*s://", p.len, p.prot);
 
@@ -552,6 +551,37 @@ bksmt_uri_build(struct bksmt_uri *uri, char **ret, int flags)
     if (uri->anchor) {
         xasprintf(ret, "%s#%s", *ret, uri->anchor);
     }
+    return HTTP_OK;
+}
+
+int 
+bksmt_authority_extract(char *uri, char **auth)
+{
+    struct bksmt_uri *ustct;
+    struct bksmt_http_prot_lut_entry p;
+    int cport;
+
+    assert(auth != NULL);
+
+    if (uri == NULL)
+        return HTTP_ERROR;
+
+    if (bksmt_uri_parse(uri, &ustct) == HTTP_ERROR)
+        return HTTP_ERROR;
+
+    p = bksmt_http_prot_lut[ustct->protocolk];
+
+    if (ustct->port == 0) {
+        if (ustct->protocolk == HTTP_HTTP)
+            cport = 80;
+        else
+            cport = 443;
+    } else {
+        cport = ustct->port;
+    }
+
+    xasprintf(auth, "%s://%s:%d", p.prot, ustct->dn, cport);
+    bksmt_uri_free(ustct);    
     return HTTP_OK;
 }
 

@@ -1,7 +1,3 @@
-* Implement in-mem cookie subsystem of client
-
-* MAYBE add an authority abstraction 
-
 * Implement redirect algorithm
 
 * Implement TLS 

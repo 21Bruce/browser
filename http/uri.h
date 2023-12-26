@@ -14,9 +14,11 @@ struct bksmt_uri {
 
 char *bksmt_cstrpctenc(char *);
 
-int bksmt_uri_parse(struct bksmt_uri *, char *);
+int bksmt_uri_parse(char *, struct bksmt_uri **);
 
 int bksmt_uri_build(struct bksmt_uri *, char **, int);
+
+int bksmt_authority_extract(char *, char **);
 
 void bksmt_uri_clear(struct bksmt_uri *);
 

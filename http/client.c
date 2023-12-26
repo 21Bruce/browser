@@ -95,8 +95,7 @@ bksmt_http_client_do(struct bksmt_http_client *client,
          * perform uri analysis using uri lib
          */
         /* init uri struct and parse fpath */
-        uri = xzalloc(sizeof *uri);
-        stat = bksmt_uri_parse(uri, req->header.fpath);
+        stat = bksmt_uri_parse(req->header.fpath, &uri);
 
         /* if parsing failed, fpath is not valid uri, fail */
         if (stat != HTTP_OK) {
@@ -218,6 +217,12 @@ done:
     if(uri)
         bksmt_uri_free(uri);
     return stat;
+}
+
+struct bksmt_dictcase *
+bksmt_http_client_get_cookies(struct bksmt_http_client *client, char *authority)
+{
+    return bksmt_llkv_get(client->cookiejar, authority, 0);
 }
 
 void bksmt_http_client_free(struct bksmt_http_client *client) 

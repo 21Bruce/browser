@@ -22,8 +22,7 @@ bksmt_http_req_init(char *uri, int verbk, struct bksmt_buf *body, int flags, str
     assert(uri != NULL);
     assert(0 <= verbk && verbk <= 8);
 
-    ustct = xmalloc(sizeof *ustct);
-    if (bksmt_uri_parse(ustct, uri) != HTTP_OK) {
+    if (bksmt_uri_parse(uri, &ustct) != HTTP_OK) {
         bksmt_uri_free(ustct);
         return HTTP_ERROR;
     }

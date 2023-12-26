@@ -36,6 +36,9 @@ struct bksmt_http_client *bksmt_http_client_init(void);
 /* int ret is one of HTTP stat codes */
 int bksmt_http_client_do(struct bksmt_http_client *, struct bksmt_http_req *, int, struct bksmt_http_res **);
 
+/* char * is the authority, being "scheme://domain:port" */
+struct bksmt_dictcase *bksmt_http_client_get_cookies(struct bksmt_http_client *, char *);
+
 void bksmt_http_client_free(struct bksmt_http_client *);
 
 /* do flags */
