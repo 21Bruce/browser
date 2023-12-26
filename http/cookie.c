@@ -53,10 +53,6 @@ parse_cookie(char *src, struct bksmt_dict **cookie)
 
         nxtscol = strchr(src, ';');
 
-        /* if nxtcol is at src, no val, so err */
-        if (nxtscol == src)
-            goto verror;
-
         /* if no next semicol, cpy to end. else, cpy to semicol */
         if (nxtscol == NULL) 
             xasprintf(&tmpv, "%s", src);
@@ -89,9 +85,6 @@ parse_cookie(char *src, struct bksmt_dict **cookie)
 
     return COOKIE_OK;
 
-verror:
-    /* error getting val */
-    free(tmpk);
 kerror:
     /* error getting key */
     bksmt_dict_free(*cookie);

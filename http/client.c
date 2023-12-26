@@ -182,6 +182,7 @@ bksmt_http_client_do(struct bksmt_http_client *client,
         goto abort1;
     }
 
+
     /* alloc res and recv  */
     *res = xmalloc(sizeof **res);
     stat = bksmt_http_res_recv(*res, client->conn);
