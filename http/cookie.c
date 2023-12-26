@@ -130,7 +130,7 @@ build_cookie(struct bksmt_dict *cookie, char **ret)
     /* loop through remaining attrs and append */
     BKSMT_DICT_FOREACH(cookie, e)
         if (strcmp(e->key, "Name") && strcmp(e->key, "Value")) {
-            if (*val == 0)
+            if (*(e->val) == 0)
                 xasprintf(ret, "%s; %s", *ret, e->key);
             else
                 xasprintf(ret, "%s; %s=%s", *ret, e->key, e->val);
