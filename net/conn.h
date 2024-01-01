@@ -39,9 +39,6 @@ void bksmt_conn_free(struct bksmt_conn *);
 /* connection operation status */
 #define CONN_OK     0
 #define CONN_ERROR  1
-#define CONN_AGAIN  2
-#define CONN_BUSY   3
-#define CONN_BAD    4
 
 /* init flags */
 #define CONN_DNS  0x1

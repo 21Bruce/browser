@@ -12,3 +12,18 @@ intpow(int b, int e)
 
     return exp;
 }
+
+int
+roundup(int src, int mul) 
+{
+    if (src % mul != 0) 
+       return  (src/mul + 1) * mul;
+
+    return src;
+}
+
+int
+rounddown(int src, int mul) 
+{
+    return (src/mul) * mul;
+}
