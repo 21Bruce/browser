@@ -7,7 +7,7 @@ void bksmt_sha1(unsigned char[20], unsigned char *, int);
 
 void bksmt_sha256(unsigned char[32], unsigned char *, int);
 
-void bksmt_sha224(unsigned char[24], unsigned char *, int);
+void bksmt_sha224(unsigned char[28], unsigned char *, int);
 
 void bksmt_sha512(unsigned char[64], unsigned char *, int);
 

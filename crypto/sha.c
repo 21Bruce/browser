@@ -136,6 +136,54 @@ bksmt_sha256(unsigned char ret[32], unsigned char *src, int len)
         bksmt_unpackbe32(hash[i], ret + i * 4); 
 }
 
+void
+bksmt_sha224(unsigned char ret[28], unsigned char *src, int len) 
+{
+    uint32_t *prs, work[8], w[65], tmp1, tmp2, hash[8] = SHA224_INIT;
+    int blks, i, t, plen;
+
+    /* pad input */
+    prs = bksmt_sha256_pad(src, len);
+
+    /* calc byte length for padded input (essentially size of prs) */
+    plen = bksmt_sha256_pad_len(len);
+
+    /* prs length in # of 512 bit groups */
+    blks = plen/64;
+
+    /* iterate through 512-bit chunks of message */
+    for(i = 0; i < blks; i++) {
+        /* generate message schedule */
+        sha256w_gen(w, prs, i);
+
+        /* fill work vars w/ current hash */
+        memcpy(work, hash, 32);
+ 
+        /* generate new work vars */
+        for (t = 0; t < 64; t++) {
+            tmp1 = (work[7] + SUM2561(work[4]) + CH(work[4], work[5], work[6]) + sha256_const_lut[t] + w[t]) % (4294967296);
+            tmp2 = (SUM2560(work[0]) + MAJ(work[0], work[1], work[2])) % (4294967296);
+            work[7] = work[6];
+            work[6] = work[5];
+            work[5] = work[4];
+            work[4] = (work[3] + tmp1) % (4294967296);
+            work[3] = work[2];
+            work[2] = work[1];
+            work[1] = work[0];
+            work[0] = (tmp1 + tmp2) % (4294967296);
+       }
+
+        /* add work to hash */
+        for (t = 0; t < 8; t++) {
+            hash[t] = (hash[t] + work[t]) % (4294967296);
+        }
+    }
+
+    free(prs);
+
+    for (i = 0; i < 7; i++) 
+        bksmt_unpackbe32(hash[i], ret + i * 4); 
+}
 static void 
 sha256w_gen(uint32_t ret[65], unsigned char *pmsg, int i) 
 {
