@@ -4,15 +4,15 @@
 #include <stdint.h>
 
 /* SHS Section 3.2 */
-#define ROTL(x,n) (((x) << (n)) | ((x) >> ((sizeof (x)) - (n))))
-#define ROTR(x,n) (((x) >> (n)) | ((x) << ((sizeof (x)) - (n))))
+#define ROTL(x,n) (((x) << (n)) | ((x) >> (((sizeof (x)) * 8) - (n))))
+#define ROTR(x,n) (((x) >> (n)) | ((x) << (((sizeof (x)) * 8) - (n))))
 #define SHR(x,n) ((x) >> (n))
-#define ADD2(x,y) (((x) + (y)) % (1 << (sizeof (x))))
+#define ADD2(x,y) (((x) + (y)) % (1 << sizeof (x)))
 
 /* SHS Section 4.1 */
-#define CH(x,y,z) (((x) & (y)) ^ (!(x) & (z)))
+#define CH(x,y,z) (((x) & (y)) | ((~(x)) & (z)))
 #define PARITY(x,y,z) ((x) ^ (y) ^ (z)) 
-#define MAJ(x,y,z) (((x) & (y)) ^ ((x) & (z)) ^ ((y) & (z)))
+#define MAJ(x,y,z) (((x) & (y)) | ((x) & (z)) | ((y) & (z)))
 #define SUM0(x) = (ROTR((x), 28) ^ ROTR((x), 34) ^ ROTR((x), 39))
 #define SUM1(x) = (ROTR((x), 14) ^ ROTR((x), 18) ^ ROTR((x), 41))
 #define SIG0(x) = (ROTR((x), 1) ^ ROTR((x), 8) ^ SHR((x), 7))
@@ -80,16 +80,16 @@ static uint32_t sha1_const_lut[80] = {
    0x8f1bbcdc, /* 57 */
    0x8f1bbcdc, /* 58 */
    0x8f1bbcdc, /* 59 */
-   0x8f1bbcdc, /* 60 */
-   0x8f1bbcdc, /* 61 */
-   0x8f1bbcdc, /* 62 */
-   0x8f1bbcdc, /* 63 */
-   0x8f1bbcdc, /* 64 */
-   0x8f1bbcdc, /* 65 */
-   0x8f1bbcdc, /* 66 */
-   0x8f1bbcdc, /* 67 */
-   0x8f1bbcdc, /* 68 */
-   0x8f1bbcdc, /* 69 */
+   0xca62c1d6, /* 60 */
+   0xca62c1d6, /* 61 */
+   0xca62c1d6, /* 62 */
+   0xca62c1d6, /* 63 */
+   0xca62c1d6, /* 64 */
+   0xca62c1d6, /* 65 */
+   0xca62c1d6, /* 66 */
+   0xca62c1d6, /* 67 */
+   0xca62c1d6, /* 68 */
+   0xca62c1d6, /* 69 */
    0xca62c1d6, /* 70 */
    0xca62c1d6, /* 71 */
    0xca62c1d6, /* 72 */
