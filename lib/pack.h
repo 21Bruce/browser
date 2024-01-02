@@ -1,5 +1,5 @@
-#ifndef __BKSMT_CRYPTO_BIT_H__
-#define __BKSMT_CRYPTO_BIT_H__
+#ifndef __BKSMT_LIB_PACK_H__
+#define __BKSMT_LIB_PACK_H__
 
 #include <stdint.h>
 
@@ -19,4 +19,4 @@ uint32_t bksmt_packbe32(unsigned char[4]);
  */
 void bksmt_unpackbe32(uint32_t, unsigned char[4]);
 
-#endif /* __BKSMT_CRYPTO_BIT_H__ */
+#endif /* __BKSMT_LIB_PACK_H__ */

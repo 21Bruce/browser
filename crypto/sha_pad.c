@@ -9,7 +9,7 @@
 #include <string.h>
 
 unsigned char * 
-sha256_pad(unsigned char *msg, long len, long *nlen) 
+bksmt_sha256_pad(unsigned char *msg, long len)
 {
     long blen;
     int pblen, applen, i, mask;
@@ -19,14 +19,10 @@ sha256_pad(unsigned char *msg, long len, long *nlen)
     blen = len * 8;
 
     /* padding length in bits */
-    pblen = (448 - blen - 1) % 512;
-    while(pblen < 0)
-        pblen += 512;
+    pblen = pmod((448 - blen - 1), 512);
 
     /* appendix len in bytes */
     applen = (pblen + 1 + 64)/8;
-
-    *nlen = len + applen;
 
     /* make a return msg of size len + appendix len */
     ret = xzallocarray(len + applen, sizeof *ret);
@@ -45,8 +41,25 @@ sha256_pad(unsigned char *msg, long len, long *nlen)
     return ret;
 }
 
+long 
+bksmt_sha256_pad_len(long len)
+{
+    long blen, pblen, applen;
+
+    /* orig len in bits */
+    blen  = 8 * len;
+
+    /* padding length in bits */
+    pblen = pmod((448 - blen - 1), 512);
+
+    /* appendix len in bytes */
+    applen = (pblen + 1 + 64)/8;
+
+    return len + applen;
+}
+
 unsigned char * 
-sha512_pad(unsigned char *msg, long len, long *nlen) 
+bksmt_sha512_pad(unsigned char *msg, long len) 
 {
     long blen;
     int pblen, applen, i, mask;
@@ -56,7 +69,7 @@ sha512_pad(unsigned char *msg, long len, long *nlen)
     blen = len * 8;
 
     /* padding length in bits */
-    pblen = (896 - blen - 1) % 1024;
+    pblen = pmod((896 - blen - 1), 1024);
 
     /* appendix len in bytes */
     applen = (pblen + 1 + 128)/8;
@@ -68,7 +81,7 @@ sha512_pad(unsigned char *msg, long len, long *nlen)
     memcpy(ret, msg, len);
 
     /* appended 1 */
-    ret[len] = (1 << 7); 
+    ret[len] = 0x80; 
 
     /* write binary rep of len to end */
     for (i = 0; i < 8; i++) {
@@ -76,4 +89,21 @@ sha512_pad(unsigned char *msg, long len, long *nlen)
     }
 
     return ret;
+}
+
+long 
+bksmt_sha512_pad_len(long len)
+{
+    long blen, pblen, applen;
+
+    /* orig len in bits */
+    blen  = 8 * len;
+
+    /* padding length in bits */
+    pblen = pmod((896 - blen - 1), 1024);
+
+    /* appendix len in bytes */
+    applen = (pblen + 1 + 128)/8;
+
+    return len + applen;
 }

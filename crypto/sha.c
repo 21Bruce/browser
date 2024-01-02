@@ -2,7 +2,7 @@
 
 #include "sha_const.h"
 #include "sha_pad.h"
-#include "bit.h"
+#include "../lib/pack.h"
 #include "../lib/math.h"
 
 #include <stdint.h>
@@ -15,13 +15,16 @@ static uint32_t sha1ft(int , uint32_t, uint32_t, uint32_t);
 static void sha1w_gen(uint32_t[80], unsigned char *, int);
 
 void
-sha1(unsigned char ret[20], unsigned char *src, int len) 
+bksmt_sha1(unsigned char ret[20], unsigned char *src, int len) 
 {
     uint32_t *prs, work[5], w[80], tmp, hash[5] = SHA1_INIT;
     int blks, i, t, plen;
 
     /* pad input */
-    prs = sha256_pad(src, len, &plen);
+    prs = bksmt_sha256_pad(src, len);
+
+    /* calc byte length for padded input (essentially size of prs) */
+    plen = bksmt_sha256_pad_len(len);
 
     /* prs length in # of 512 bit groups */
     blks = plen/64;

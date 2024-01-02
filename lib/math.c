@@ -27,3 +27,15 @@ rounddown(int src, int mul)
 {
     return (src/mul) * mul;
 }
+
+long
+pmod(long src, long base)
+{
+    long ret;
+
+    ret = src % base;
+    while(ret < 0)
+        ret += base;
+
+    return ret;
+}
