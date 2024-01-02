@@ -10,13 +10,19 @@
 #define ADD2(x,y) (((x) + (y)) % (1 << sizeof (x)))
 
 /* SHS Section 4.1 */
-#define CH(x,y,z) (((x) & (y)) | ((~(x)) & (z)))
+#define CH(x,y,z) (((x) & (y)) ^ ((~(x)) & (z)))
 #define PARITY(x,y,z) ((x) ^ (y) ^ (z)) 
-#define MAJ(x,y,z) (((x) & (y)) | ((x) & (z)) | ((y) & (z)))
-#define SUM0(x) = (ROTR((x), 28) ^ ROTR((x), 34) ^ ROTR((x), 39))
-#define SUM1(x) = (ROTR((x), 14) ^ ROTR((x), 18) ^ ROTR((x), 41))
-#define SIG0(x) = (ROTR((x), 1) ^ ROTR((x), 8) ^ SHR((x), 7))
-#define SIG1(x) = (ROTR((x), 19) ^ ROTR((x), 61) ^  SHR((x), 6))
+#define MAJ(x,y,z) (((x) & (y)) ^ ((x) & (z)) ^ ((y) & (z)))
+
+#define SUM2560(x) (ROTR((x), 2) ^ ROTR((x), 13) ^ ROTR((x), 22))
+#define SUM2561(x) (ROTR((x), 6) ^ ROTR((x), 11) ^ ROTR((x), 25))
+#define SIG2560(x) (ROTR((x), 7) ^ ROTR((x), 18) ^ SHR((x), 3))
+#define SIG2561(x) (ROTR((x), 17) ^ ROTR((x), 19) ^  SHR((x), 10))
+
+#define SUM5120(x) (ROTR((x), 28) ^ ROTR((x), 34) ^ ROTR((x), 39))
+#define SUM5121(x) (ROTR((x), 14) ^ ROTR((x), 18) ^ ROTR((x), 41))
+#define SIG5120(x) (ROTR((x), 1) ^ ROTR((x), 8) ^ SHR((x), 7))
+#define SIG5121(x) (ROTR((x), 19) ^ ROTR((x), 61) ^  SHR((x), 6))
 
 /* SHS Section 4.2 */
 static uint32_t sha1_const_lut[80] = {

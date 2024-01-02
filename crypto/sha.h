@@ -1,8 +1,9 @@
 #ifndef __BKSMT_CRYPTO_SHA_H__
 #define __BKSMT_CRYPTO_SHA_H__
 
+/* each returns a byte array interpreted as a BE-int */
 
-void bksmt_sha1(unsigned char [20], unsigned char *, int);
+void bksmt_sha1(unsigned char[20], unsigned char *, int);
 
 void bksmt_sha256(unsigned char[32], unsigned char *, int);
 
