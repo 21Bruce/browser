@@ -19,7 +19,7 @@ static void sha256w_gen(uint32_t[65], unsigned char *, int);
 static void sha512w_gen(uint64_t[80], unsigned char *, int); 
 
 void
-bksmt_sha1(unsigned char ret[20], unsigned char *src, int len) 
+bksmt_sha1(unsigned char *src, int len, unsigned char ret[20]) 
 {
     uint32_t *prs, work[5], w[80], tmp, hash[5] = SHA1_INIT;
     int blks, i, t, plen;
@@ -90,7 +90,7 @@ sha1w_gen(uint32_t ret[80], unsigned char *pmsg, int i)
 }
 
 void
-bksmt_sha256(unsigned char ret[32], unsigned char *src, int len) 
+bksmt_sha256(unsigned char *src, int len, unsigned char ret[32]) 
 {
     uint32_t *prs, work[8], w[65], tmp1, tmp2, hash[8] = SHA256_INIT;
     int blks, i, t, plen;
@@ -139,7 +139,7 @@ bksmt_sha256(unsigned char ret[32], unsigned char *src, int len)
 }
 
 void
-bksmt_sha224(unsigned char ret[28], unsigned char *src, int len) 
+bksmt_sha224(unsigned char *src, int len, unsigned char ret[28]) 
 {
     uint32_t *prs, work[8], w[65], tmp1, tmp2, hash[8] = SHA224_INIT;
     int blks, i, t, plen;
@@ -200,7 +200,7 @@ sha256w_gen(uint32_t ret[65], unsigned char *pmsg, int i)
 }
 
 void
-bksmt_sha512(unsigned char ret[64], unsigned char *src, int len) 
+bksmt_sha512(unsigned char *src, int len, unsigned char ret[64]) 
 {
     uint64_t *prs, work[8], w[80], tmp1, tmp2, hash[8] = SHA512_INIT;
     int blks, i, t, plen;
@@ -249,7 +249,7 @@ bksmt_sha512(unsigned char ret[64], unsigned char *src, int len)
 }
 
 void
-bksmt_sha384(unsigned char ret[48], unsigned char *src, int len) 
+bksmt_sha384(unsigned char *src, int len, unsigned char ret[48]) 
 {
     uint64_t *prs, work[8], w[80], tmp1, tmp2, hash[8] = SHA384_INIT;
     int blks, i, t, plen;
@@ -298,7 +298,7 @@ bksmt_sha384(unsigned char ret[48], unsigned char *src, int len)
 }
 
 void
-bksmt_sha512t224(unsigned char ret[28], unsigned char *src, int len) 
+bksmt_sha512t224(unsigned char *src, int len, unsigned char ret[28]) 
 {
     uint64_t *prs, work[8], w[80], tmp1, tmp2, hash[8] = SHA512224_INIT;
     int blks, i, t, plen;
@@ -351,7 +351,7 @@ bksmt_sha512t224(unsigned char ret[28], unsigned char *src, int len)
 }
 
 void
-bksmt_sha512t256(unsigned char ret[32], unsigned char *src, int len) 
+bksmt_sha512t256(unsigned char *src, int len, unsigned char ret[32]) 
 {
     uint64_t *prs, work[8], w[80], tmp1, tmp2, hash[8] = SHA512256_INIT;
     int blks, i, t, plen;
