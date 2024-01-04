@@ -11,7 +11,7 @@ bksmt_aes_subbytes(unsigned char state[16])
         for(j = 0; j < 4; j++) {
             r = (state[4*i + j] & 0xF0) >> 4;
             c = state[4*i + j] & 0x0F;
-            state[4*i + j] = aes_subbytes_lut[4*r + c];
+            state[4*i + j] = aes_subbytes_lut[16*r + c];
         }
 }
 
