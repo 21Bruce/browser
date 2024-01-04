@@ -73,12 +73,12 @@ bksmt_aes_mixcols(unsigned char state[16])
 
 
 void 
-bksmt_aes_addroundkey(unsigned char state[16], unsigned char roundkey[4])
+bksmt_aes_addroundkey(unsigned char state[16], unsigned char roundkey[16])
 {
     unsigned char col[4], trans[4];
     int i, j;
 
     for (j = 0; j < 4; j++)
         for (i = 0; i < 4; i++) 
-            state[4 * i + j] ^= roundkey[j];
+            state[4 * i + j] ^= roundkey[4*i + j];
 }
