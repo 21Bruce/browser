@@ -1,5 +1,7 @@
 #include "aes_poly.h"
 
+#include <string.h>
+
 static unsigned char xtimes(unsigned char);
 
 unsigned char bksmt_bin_pmult(unsigned char p1, unsigned char p2)
@@ -45,6 +47,9 @@ bksmt_byte_pmmult(unsigned char p1[4], unsigned char p2[4], unsigned char pret[4
 {
     int i;
 
+    /* zero out pret */
+
+    bzero(pret, 4);
     /* FIPS-197 Section 4.3 Fig 4.12 */
     for (i = 0; i < 4; i++) {
        pret[i] ^= bksmt_bin_pmult(p1[i % 4], p2[0]);

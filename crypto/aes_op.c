@@ -1,6 +1,7 @@
 #include "aes_op.h"
 #include "aes_const.h"
 #include "aes_poly.h"
+#include <stdio.h> 
 
 void
 bksmt_aes_subbytes(unsigned char state[16])
@@ -80,5 +81,5 @@ bksmt_aes_addroundkey(unsigned char state[16], unsigned char roundkey[16])
 
     for (j = 0; j < 4; j++)
         for (i = 0; i < 4; i++) 
-            state[4 * i + j] ^= roundkey[4*i + j];
+            state[4 * j + i] ^= roundkey[4*i + j];
 }
