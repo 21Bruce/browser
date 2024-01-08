@@ -10,4 +10,13 @@ void bksmt_aes_mixcols(unsigned char[16]);
 
 void bksmt_aes_addroundkey(unsigned char[16], unsigned char[16]);
 
+void bksmt_aes_inv_subbytes(unsigned char[16]);
+
+void bksmt_aes_inv_shiftrows(unsigned char[16]);
+
+void bksmt_aes_inv_mixcols(unsigned char[16]);
+
+void bksmt_aes_addroundkey(unsigned char[16], unsigned char[16]);
+
+
 #endif /* __BKSMT_CRYPTO_AES_OP_H__ */
