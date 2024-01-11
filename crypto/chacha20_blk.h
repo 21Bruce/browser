@@ -9,4 +9,4 @@
  */
 void bksmt_chacha20_blk(unsigned char [32], unsigned char [12], uint32_t, unsigned char [64]);
 
-#endif /* __BKSMT_CRYPTO_CHACHA20_H__ */
+#endif /* __BKSMT_CRYPTO_CHACHA20_BLK_H__ */
