@@ -3,6 +3,7 @@
 #include "chacha20_blk_op.h"
 
 #include <stdint.h>
+#include <string.h>
 
 static void round(uint32_t [16]);
 
@@ -17,7 +18,7 @@ bksmt_chacha20_blk(unsigned char key[32], unsigned char nonce[12], uint32_t bloc
     bksmt_chacha20_blk_in(key, nonce, blockcount, state);
 
     /* we need a copy of state for the end */
-    bksmt_chacha20_blk_in(key, nonce, blockcount, statecp);
+    memcpy(statecp, state, 64);
 
     /* 10 iterations of the round function */
     for(i = 0; i < 10; i++)
