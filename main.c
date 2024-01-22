@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "libhttp/cookie.h"
-#include "libhttp/client.h"
-#include "libhttp/response.h"
-#include "libhttp/request.h"
+#include "http/cookie.h"
+#include "http/client.h"
+#include "http/response.h"
+#include "http/request.h"
 #include "lib/dictcase.h"
 #include "lib/dict.h"
 
