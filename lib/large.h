@@ -8,64 +8,42 @@
 /* 
  * name conventions: 
  *
- *  s - signed
- *  u - unsigned
  *  eq - stores result in first arg
  */
 
 struct bksmt_large;
 
-struct bksmt_large *bksmt_large_init(int);
+struct bksmt_large *bksmt_large_init(unsigned char *, int);
 
 void bksmt_large_free(struct bksmt_large *);
 
-struct bksmt_large *bksmt_large_sadd(struct bksmt_large *, struct bksmt_large *);
+struct bksmt_large *bksmt_large_add(struct bksmt_large *, struct bksmt_large *);
 
-struct bksmt_large *bksmt_large_uadd(struct bksmt_large *, struct bksmt_large *);
+void bksmt_large_addeq(struct bksmt_large *, struct bksmt_large *);
 
-void bksmt_large_seqadd(struct bksmt_large *, struct bksmt_large *);
+struct bksmt_large *bksmt_large_neg(struct bksmt_large *, struct bksmt_large *);
 
-void bksmt_large_ueqadd(struct bksmt_large *, struct bksmt_large *);
+void bksmt_large_negeq(struct bksmt_large *, struct bksmt_large *);
 
-struct bksmt_large *bksmt_large_ssub(struct bksmt_large *, struct bksmt_large *);
+struct bksmt_large *bksmt_large_sub(struct bksmt_large *, struct bksmt_large *);
 
-struct bksmt_large *bksmt_large_usub(struct bksmt_large *, struct bksmt_large *);
+void bksmt_large_subeq(struct bksmt_large *, struct bksmt_large *);
 
-void bksmt_large_seqsub(struct bksmt_large *, struct bksmt_large *);
+struct bksmt_large *bksmt_large_sub(struct bksmt_large *, struct bksmt_large *);
 
-void bksmt_large_ueqsub(struct bksmt_large *, struct bksmt_large *);
+void bksmt_large_subeq(struct bksmt_large *, struct bksmt_large *);
 
-struct bksmt_large *bksmt_large_ssub(struct bksmt_large *, struct bksmt_large *);
+struct bksmt_large *bksmt_large_mult(struct bksmt_large *, struct bksmt_large *);
 
-struct bksmt_large *bksmt_large_usub(struct bksmt_large *, struct bksmt_large *);
+void bksmt_large_multeq(struct bksmt_large *, struct bksmt_large *);
 
-void bksmt_large_seqsub(struct bksmt_large *, struct bksmt_large *);
+struct bksmt_large *bksmt_large_div(struct bksmt_large *, struct bksmt_large *);
 
-void bksmt_large_ueqsub(struct bksmt_large *, struct bksmt_large *);
+void bksmt_large_diveq(struct bksmt_large *, struct bksmt_large *);
 
-struct bksmt_large *bksmt_large_smult(struct bksmt_large *, struct bksmt_large *);
+struct bksmt_large *bksmt_large_shift(struct bksmt_large *, int);
 
-struct bksmt_large *bksmt_large_umult(struct bksmt_large *, struct bksmt_large *);
-
-void bksmt_large_seqmult(struct bksmt_large *, struct bksmt_large *);
-
-void bksmt_large_ueqmult(struct bksmt_large *, struct bksmt_large *);
-
-struct bksmt_large *bksmt_large_sdiv(struct bksmt_large *, struct bksmt_large *);
-
-struct bksmt_large *bksmt_large_udiv(struct bksmt_large *, struct bksmt_large *);
-
-void bksmt_large_seqdiv(struct bksmt_large *, struct bksmt_large *);
-
-void bksmt_large_ueqdiv(struct bksmt_large *, struct bksmt_large *);
-
-struct bksmt_large *bksmt_large_sshift(struct bksmt_large *, int);
-
-struct bksmt_large *bksmt_large_ushift(struct bksmt_large *, int);
-
-void bksmt_large_seqshift(struct bksmt_large *, int);
-
-void bksmt_large_ueqshift(struct bksmt_large *, int);
+void bksmt_large_shifteq(struct bksmt_large *, int);
 
 int bksmt_large_eq(struct bksmt_large *, struct bksmt_large *);
 
@@ -79,17 +57,29 @@ int bksmt_large_geq(struct bksmt_large *, struct bksmt_large *);
 
 int bksmt_large_gt(struct bksmt_large *, struct bksmt_large *);
 
-struct bksmt_large *bksmt_large_smod(struct bksmt_large *, struct bksmt_large *);
+struct bksmt_large *bksmt_large_mod(struct bksmt_large *, struct bksmt_large *);
 
-struct bksmt_large *bksmt_large_umod(struct bksmt_large *, struct bksmt_large *);
+void bksmt_large_modeq(struct bksmt_large *, struct bksmt_large *);
 
-void bksmt_large_seqmod(struct bksmt_large *, struct bksmt_large *);
+struct bksmt_large *bksmt_large_or(struct bksmt_large *, struct bksmt_large *);
 
-void bksmt_large_ueqmod(struct bksmt_large *, struct bksmt_large *);
+void bksmt_large_oreq(struct bksmt_large *, struct bksmt_large *);
+
+struct bksmt_large *bksmt_large_and(struct bksmt_large *, struct bksmt_large *);
+
+void bksmt_large_andeq(struct bksmt_large *, struct bksmt_large *);
+
+struct bksmt_large *bksmt_large_xor(struct bksmt_large *, struct bksmt_large *);
+
+void bksmt_large_xoreq(struct bksmt_large *, struct bksmt_large *);
+
+struct bksmt_large *bksmt_large_not(struct bksmt_large *, struct bksmt_large *);
+
+void bksmt_large_noteq(struct bksmt_large *, struct bksmt_large *);
 
 struct bksmt_large {
-    uint64_t *num;
-    int cap;
+    unsigned char *num;
+    int len;
 };
 
 #endif /* __BKSMT_LIB_LARGE_H__ */
