@@ -221,9 +221,22 @@ done:
 }
 
 struct bksmt_dictcase *
-bksmt_http_client_get_cookies(struct bksmt_http_client *client, char *authority)
+bksmt_http_client_get_cookies(struct bksmt_http_client *client, char *uri)
 {
-    return bksmt_llkv_get(client->cookiejar, authority, 0);
+    char *auth;
+    struct bksmt_dictcase *ret;
+
+    assert(client != NULL);
+    assert(uri != NULL);
+    
+    if (bksmt_authority_extract(uri, &auth) == HTTP_ERROR)
+        return NULL;
+
+    ret = bksmt_llkv_get(client->cookiejar, auth, 0);
+
+    free(auth);
+
+    return ret;
 }
 
 void bksmt_http_client_free(struct bksmt_http_client *client) 
