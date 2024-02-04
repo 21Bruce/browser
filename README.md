@@ -1,6 +1,6 @@
 # booksmart
 
-Lightweight & Configurable Client to Library Genesis
+A more technically useful browser.
 
 ## How to Build
 This project requires bsdmake. On any of the *BSD operating
