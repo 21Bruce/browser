@@ -47,7 +47,7 @@ ${TCNAME}-run: ${TCNAME}-gen
 	-@./${TCNAME} > /dev/null 2>&1 ; echo "\t\t\"status\": "$$?"," 
 	@echo "\t}"
 	@bsdmake ${TCNAME}-clean
-${TCNAME}-gen: ${TCOFILE-${TCNAME}}
+${TCNAME}-gen: ${TCOFILE-${TCNAME}} ${COFILES}
 	@${CC} ${COFILES} ${TCOFILE-${TCNAME}} -o ${TCNAME} > /dev/null 2>&1
 ${TCNAME}-clean:
 	@rm -rf ${TCOFILE-${TCNAME}} ${TCDFILE-${TCNAME}} ${TCNAME} 	
