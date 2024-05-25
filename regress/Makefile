@@ -60,11 +60,11 @@ run: ${COFILES} start ${RULENMS} end clean
 	@${CC} ${ALLFLAGS} -c $< -o $@ > /dev/null 2>&1
 
 clean:
-	@rm -rf ${COFILES} ${CDFILES} ${GCHFILES} 
+	-@rm -rf ${COFILES} ${CDFILES} ${GCHFILES} 
 
 start:
 	@echo "{"
-	@echo "\tsuites:["
+	@echo "\t\"suites\":["
 
 end:
 	@echo "\t],"
@@ -75,7 +75,11 @@ end:
 ${DIR}-run:
 	@echo "\t\t{"
 	@echo "\t\t\t\"name\": \"${DIR}\","
+.ifdef DEBUG
+	@bsdmake DEBUG=1 HARNESS=1 -C ./${DIR}/ 2>/dev/null | awk ' BEGIN { } { print "\t\t\t" $$0 } END { } ' 
+.else
 	@bsdmake HARNESS=1 -C ./${DIR}/ 2>/dev/null | awk ' BEGIN { } { print "\t\t\t" $$0 } END { } ' 
+.endif
 #	@bsdmake -C ./${DIR}/ | awk ' BEGIN { } { print "\t\t" $$0 } END { } ' 
 	@echo "\t\t},"
 .endfor

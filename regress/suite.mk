@@ -31,14 +31,14 @@ GCHFILES:= ${HFILES:S/.h/.h.gch/g}
 .PHONY: all 
 
 all: ${COFILES} start ${TRUNS} end
-	
+
 start:
 	@echo "\"tests\": ["
 
 end:
 	@echo "],"
 .ifndef HARNESS
-	@rm -rf ${COFILES} ${CDFILES} ${GCHFILES}
+	-@rm -rf ${COFILES} ${CDFILES} ${GCHFILES}
 .endif
 
 .c.o:
@@ -47,16 +47,21 @@ end:
 .for TCNAME in ${TCNAMES}
 TCOFILE-${TCNAME} = ${TCNAME}.o
 TCDFILE-${TCNAME} = ${TCNAME}.d
-${TCNAME}-run: ${TCNAME}-gen
+${TCNAME}-run: ${TCNAME}-gen ${COFILES}
 	@echo "\t{"
 	@echo "\t\t\"name\": \"${TCNAME}\","
-.ifdef DEBUG
-	-@./${TCNAME} ; echo "\t\t\"status\": "$$?"," 
-.else
 	-@./${TCNAME} > /dev/null 2>&1 ; echo "\t\t\"status\": "$$?"," 
+.ifdef DEBUG
+	@echo "\t\t\"debug\": ["
+	-@./${TCNAME} 2>&1 | awk ' BEGIN { } { print ("\t\t\t\"" $$0  "\",")} END { } ' 
+	@echo "\t\t],"
 .endif
-	@echo "\t}"
-	@rm -rf ${TCOFILE-${TCNAME}} ${TCDFILE-${TCNAME}} ${TCNAME} 
+	@echo "\t},"
+	-@rm -rf ${TCOFILE-${TCNAME}} ${TCDFILE-${TCNAME}} ${TCNAME} 
+.if ${.TARGETS} == ${TCNAME}-run
+	-@rm -rf ${COFILES} ${CDFILES} ${GCHFILES}
+.endif
+
 ${TCNAME}-gen: ${TCOFILE-${TCNAME}} ${COFILES}
 	@${CC} ${COFILES} ${TCOFILE-${TCNAME}} -o ${TCNAME} > /dev/null 2>&1
 .endfor
