@@ -20,7 +20,9 @@ TCNAMES:= ${TCFILES:S/.c//g:.//%=%}
 
 # get all code o files --- should be already compiled by harness
 CCFILES!= find ${SUBCDIRS} -name "*.c"
+HFILES!= find ${SUBCDIRS} -name "*.h"
 COFILES:= ${CCFILES:S/.c/.o/g}
+CDFILES:= ${CCFILES:S/.c/.d/g}
 
 GCHFILES:= ${HFILES:S/.h/.h.gch/g}
 
@@ -47,9 +49,11 @@ ${TCNAME}-run: ${TCNAME}-gen
 	@echo "\t\t\"name\": \"${TCNAME}\","
 	-@./${TCNAME} > /dev/null 2>&1 ; echo "\t\t\"status\": "$$?"," 
 	@echo "\t}"
-	@bsdmake ${TCNAME}-clean
+.ifdef HARNESS
+	@rm -rf ${TCOFILE-${TCNAME}} ${TCDFILE-${TCNAME}} ${TCNAME}
+.else
+	@rm -rf ${TCOFILE-${TCNAME}} ${TCDFILE-${TCNAME}} ${TCNAME} ${COFILES} ${CDFILES} ${GCHFILES}
+.endif
 ${TCNAME}-gen: ${TCOFILE-${TCNAME}} ${COFILES}
 	@${CC} ${COFILES} ${TCOFILE-${TCNAME}} -o ${TCNAME} > /dev/null 2>&1
-${TCNAME}-clean:
-	@rm -rf ${TCOFILE-${TCNAME}} ${TCDFILE-${TCNAME}} ${TCNAME} ${COFILES}	
 .endfor

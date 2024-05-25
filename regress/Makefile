@@ -75,7 +75,7 @@ end:
 ${DIR}-run:
 	@echo "\t\t{"
 	@echo "\t\t\t\"name\": \"${DIR}\","
-	@bsdmake -C ./${DIR}/ 2>/dev/null | awk ' BEGIN { } { print "\t\t\t" $$0 } END { } ' 
+	@bsdmake HARNESS=1 -C ./${DIR}/ 2>/dev/null | awk ' BEGIN { } { print "\t\t\t" $$0 } END { } ' 
 #	@bsdmake -C ./${DIR}/ | awk ' BEGIN { } { print "\t\t" $$0 } END { } ' 
 	@echo "\t\t},"
 .endfor
