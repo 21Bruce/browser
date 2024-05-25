@@ -37,6 +37,9 @@ start:
 
 end:
 	@echo "],"
+.ifndef HARNESS
+	@rm -rf ${COFILES} ${CDFILES} ${GCHFILES}
+.endif
 
 .c.o:
 	@${CC} ${ALLFLAGS} -c $< -o $@ > /dev/null 2>&1
@@ -47,13 +50,13 @@ TCDFILE-${TCNAME} = ${TCNAME}.d
 ${TCNAME}-run: ${TCNAME}-gen
 	@echo "\t{"
 	@echo "\t\t\"name\": \"${TCNAME}\","
-	-@./${TCNAME} > /dev/null 2>&1 ; echo "\t\t\"status\": "$$?"," 
-	@echo "\t}"
-.ifdef HARNESS
-	@rm -rf ${TCOFILE-${TCNAME}} ${TCDFILE-${TCNAME}} ${TCNAME}
+.ifdef DEBUG
+	-@./${TCNAME} ; echo "\t\t\"status\": "$$?"," 
 .else
-	@rm -rf ${TCOFILE-${TCNAME}} ${TCDFILE-${TCNAME}} ${TCNAME} ${COFILES} ${CDFILES} ${GCHFILES}
+	-@./${TCNAME} > /dev/null 2>&1 ; echo "\t\t\"status\": "$$?"," 
 .endif
+	@echo "\t}"
+	@rm -rf ${TCOFILE-${TCNAME}} ${TCDFILE-${TCNAME}} ${TCNAME} 
 ${TCNAME}-gen: ${TCOFILE-${TCNAME}} ${COFILES}
 	@${CC} ${COFILES} ${TCOFILE-${TCNAME}} -o ${TCNAME} > /dev/null 2>&1
 .endfor
