@@ -19,7 +19,8 @@ TRUNS:= ${TCFILES:S/.c/-run/g:.//%=%}
 TCNAMES:= ${TCFILES:S/.c//g:.//%=%}
 
 # get all code o files --- should be already compiled by harness
-COFILES!= find ${SUBCDIRS} -name "*.o"
+CCFILES!= find ${SUBCDIRS} -name "*.c"
+COFILES:= ${CCFILES:S/.c/.o/g}
 
 GCHFILES:= ${HFILES:S/.h/.h.gch/g}
 
@@ -27,7 +28,7 @@ GCHFILES:= ${HFILES:S/.h/.h.gch/g}
 
 .PHONY: all 
 
-all: start ${TRUNS} end
+all: ${COFILES} start ${TRUNS} end
 	
 start:
 	@echo "\"tests\": ["
@@ -50,5 +51,5 @@ ${TCNAME}-run: ${TCNAME}-gen
 ${TCNAME}-gen: ${TCOFILE-${TCNAME}} ${COFILES}
 	@${CC} ${COFILES} ${TCOFILE-${TCNAME}} -o ${TCNAME} > /dev/null 2>&1
 ${TCNAME}-clean:
-	@rm -rf ${TCOFILE-${TCNAME}} ${TCDFILE-${TCNAME}} ${TCNAME} 	
+	@rm -rf ${TCOFILE-${TCNAME}} ${TCDFILE-${TCNAME}} ${TCNAME} ${COFILES}	
 .endfor
