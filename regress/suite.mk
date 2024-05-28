@@ -4,6 +4,10 @@ OPT:=-O0
 DEPFLAGS:=-MD -MP
 CFLAGS:=-Wextra -Wall -g 
 
+.ifndef DEBUG
+DEBUG := 0
+.endif
+
 # accumulate flags
 ALLFLAGS:=${CFLAGS} ${DEPFLAGS} ${OPT}
 
@@ -30,28 +34,37 @@ GCHFILES:= ${HFILES:S/.h/.h.gch/g}
 
 .PHONY: all 
 
-all: ${COFILES} start ${TRUNS} end
+all: ${COFILES} _start ${TRUNS} _end
 
-start:
+_start:
 	@echo "\"tests\": ["
 
-end:
+_end:
 	@echo "],"
 .ifndef HARNESS
 	-@rm -rf ${COFILES} ${CDFILES} ${GCHFILES}
 .endif
 
 .c.o:
+.if ${DEBUG} >= 2
+	${CC} ${ALLFLAGS} -c $< -o $@ 
+.else
 	@${CC} ${ALLFLAGS} -c $< -o $@ > /dev/null 2>&1
+.endif
 
 .for TCNAME in ${TCNAMES}
 TCOFILE-${TCNAME} = ${TCNAME}.o
 TCDFILE-${TCNAME} = ${TCNAME}.d
-${TCNAME}-run: ${TCNAME}-gen ${COFILES}
+${TCNAME}-run: ${TCOFILE-${TCNAME}} ${COFILES}
+.if ${DEBUG} >= 2
+	${CC} ${COFILES} ${TCOFILE-${TCNAME}} -o ${TCNAME} 
+.else 
+	@${CC} ${COFILES} ${TCOFILE-${TCNAME}} -o ${TCNAME} > /dev/null 2>&1
+.endif
 	@echo "\t{"
 	@echo "\t\t\"name\": \"${TCNAME}\","
 	-@./${TCNAME} > /dev/null 2>&1 ; echo "\t\t\"status\": "$$?"," 
-.ifdef DEBUG
+.if ${DEBUG} >= 1
 	@echo "\t\t\"debug\": ["
 	-@./${TCNAME} 2>&1 | awk ' BEGIN { } { print ("\t\t\t\"" $$0  "\",")} END { } ' 
 	@echo "\t\t],"
@@ -61,7 +74,4 @@ ${TCNAME}-run: ${TCNAME}-gen ${COFILES}
 .if ${.TARGETS} == ${TCNAME}-run
 	-@rm -rf ${COFILES} ${CDFILES} ${GCHFILES}
 .endif
-
-${TCNAME}-gen: ${TCOFILE-${TCNAME}} ${COFILES}
-	@${CC} ${COFILES} ${TCOFILE-${TCNAME}} -o ${TCNAME} > /dev/null 2>&1
 .endfor

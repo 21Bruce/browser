@@ -1,5 +1,9 @@
 # suite harness
 
+.ifndef DEBUG
+DEBUG:=0
+.endif
+
 # get all suite dirs 
 SUBDIRS != ls -d */
 
@@ -57,7 +61,11 @@ json:
 run: ${COFILES} start ${RULENMS} end clean
 
 .c.o:
+.if ${DEBUG} >= 2
+	${CC} ${ALLFLAGS} -c $< -o $@ 
+.else
 	@${CC} ${ALLFLAGS} -c $< -o $@ > /dev/null 2>&1
+.endif
 
 clean:
 	-@rm -rf ${COFILES} ${CDFILES} ${GCHFILES} 
@@ -75,11 +83,7 @@ end:
 ${DIR}-run:
 	@echo "\t\t{"
 	@echo "\t\t\t\"name\": \"${DIR}\","
-.ifdef DEBUG
-	@bsdmake DEBUG=1 HARNESS=1 -C ./${DIR}/ 2>/dev/null | awk ' BEGIN { } { print "\t\t\t" $$0 } END { } ' 
-.else
-	@bsdmake HARNESS=1 -C ./${DIR}/ 2>/dev/null | awk ' BEGIN { } { print "\t\t\t" $$0 } END { } ' 
-.endif
+	@bsdmake DEBUG=${DEBUG} HARNESS=1 -C ./${DIR}/ 2>/dev/null | awk ' BEGIN { } { print "\t\t\t" $$0 } END { } ' 
 #	@bsdmake -C ./${DIR}/ | awk ' BEGIN { } { print "\t\t" $$0 } END { } ' 
 	@echo "\t\t},"
 .endfor
