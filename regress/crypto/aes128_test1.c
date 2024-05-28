@@ -41,6 +41,40 @@ main(void)
         return 2;
     }
 
+    unsigned char in1[16] = { 
+        0x6B, 0xC1, 0xBE, 0xE2, 
+        0x2E, 0x40, 0x9F, 0x96, 
+        0xE9, 0x3D, 0x7E, 0x11,
+        0x73, 0x93, 0x17, 0x2A,
+    };
+
+    unsigned char key1[16] = { 
+        0x2B, 0x7E, 0x15, 0x16,
+        0x28, 0xAE, 0xD2, 0xA6,
+        0xAB, 0xF7, 0x15, 0x88,
+        0x09, 0xCF, 0x4F, 0x3C,
+    };
+
+    unsigned char out1[16] = { 
+        0x3A, 0xD7, 0x7B, 0xB4,
+        0x0D, 0x7A, 0x36, 0x60,
+        0xA8, 0x9E, 0xCA, 0xF3,
+        0x24, 0x66, 0xEF, 0x97,
+    };
+
+    bksmt_aes_128(in1, key1, store);
+
+    if (memcmp(store, out1, 16) != 0) {
+        fprintf(stderr, "bksmt_aes_128 test FAILED\n");
+        return 3;
+    }
+
+    bksmt_aes_inv_128(out1, key1, store);
+
+    if (memcmp(store, in1, 16) != 0) {
+        fprintf(stderr, "bksmt_aes_inv_128 test FAILED\n");
+        return 4;
+    }
     fprintf(stderr, "all tests suceeded\n");
     return 0;
 }
