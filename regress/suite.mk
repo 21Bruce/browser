@@ -4,8 +4,14 @@ OPT:=-O0
 DEPFLAGS:=-MD -MP
 CFLAGS:=-Wextra -Wall -g 
 
+# if no DEBUG level set, assume none
 .ifndef DEBUG
 DEBUG := 0
+.endif
+
+# if no topdir level set, assume this is topdir
+.ifndef TOPDIR 
+TOPDIR != pwd 
 .endif
 
 # accumulate flags

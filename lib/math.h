@@ -6,4 +6,7 @@ int roundup(int, int);
 int rounddown(int, int);
 long pmod(long, long);
 
+#define MAX(x,y) (x) > (y) ? (x) : (y)
+#define MIN(x,y) (x) < (y) ? (x) : (y)
+
 #endif

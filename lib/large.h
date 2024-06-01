@@ -2,84 +2,43 @@
 #define __BKSMT_LIB_LARGE_H__
 
 #include <stdint.h>
+#include <stdlib.h>
 
-/* unbounded int arithmetic functions */
+/* large number arithmetic functions interface */
 
 /* 
  * name conventions: 
  *
- *  eq - stores result in first arg
+ *  *s - operation * that stores result in first arg
  */
 
-struct bksmt_large;
-
-struct bksmt_large *bksmt_large_init(unsigned char *, int);
-
-void bksmt_large_free(struct bksmt_large *);
-
-struct bksmt_large *bksmt_large_add(struct bksmt_large *, struct bksmt_large *);
-
-void bksmt_large_addeq(struct bksmt_large *, struct bksmt_large *);
-
-struct bksmt_large *bksmt_large_neg(struct bksmt_large *, struct bksmt_large *);
-
-void bksmt_large_negeq(struct bksmt_large *, struct bksmt_large *);
-
-struct bksmt_large *bksmt_large_sub(struct bksmt_large *, struct bksmt_large *);
-
-void bksmt_large_subeq(struct bksmt_large *, struct bksmt_large *);
-
-struct bksmt_large *bksmt_large_sub(struct bksmt_large *, struct bksmt_large *);
-
-void bksmt_large_subeq(struct bksmt_large *, struct bksmt_large *);
-
-struct bksmt_large *bksmt_large_mult(struct bksmt_large *, struct bksmt_large *);
-
-void bksmt_large_multeq(struct bksmt_large *, struct bksmt_large *);
-
-struct bksmt_large *bksmt_large_div(struct bksmt_large *, struct bksmt_large *);
-
-void bksmt_large_diveq(struct bksmt_large *, struct bksmt_large *);
-
-struct bksmt_large *bksmt_large_shift(struct bksmt_large *, int);
-
-void bksmt_large_shifteq(struct bksmt_large *, int);
-
-int bksmt_large_eq(struct bksmt_large *, struct bksmt_large *);
-
-int bksmt_large_neq(struct bksmt_large *, struct bksmt_large *);
-
-int bksmt_large_leq(struct bksmt_large *, struct bksmt_large *);
-
-int bksmt_large_lt(struct bksmt_large *, struct bksmt_large *);
-
-int bksmt_large_geq(struct bksmt_large *, struct bksmt_large *);
-
-int bksmt_large_gt(struct bksmt_large *, struct bksmt_large *);
-
-struct bksmt_large *bksmt_large_mod(struct bksmt_large *, struct bksmt_large *);
-
-void bksmt_large_modeq(struct bksmt_large *, struct bksmt_large *);
-
-struct bksmt_large *bksmt_large_or(struct bksmt_large *, struct bksmt_large *);
-
-void bksmt_large_oreq(struct bksmt_large *, struct bksmt_large *);
-
-struct bksmt_large *bksmt_large_and(struct bksmt_large *, struct bksmt_large *);
-
-void bksmt_large_andeq(struct bksmt_large *, struct bksmt_large *);
-
-struct bksmt_large *bksmt_large_xor(struct bksmt_large *, struct bksmt_large *);
-
-void bksmt_large_xoreq(struct bksmt_large *, struct bksmt_large *);
-
-struct bksmt_large *bksmt_large_not(struct bksmt_large *, struct bksmt_large *);
-
-void bksmt_large_noteq(struct bksmt_large *, struct bksmt_large *);
-
-struct bksmt_large {
-    unsigned char *num;
-    int len;
+/* representation of a big int */
+struct bksmt_bigint {
+    uint64_t *num;
+    size_t size;
+    int sign;
 };
+
+/* representation of a big uint */
+struct bksmt_biguint {
+    uint64_t *num;
+    size_t size;
+};
+
+/* dynamically initialize bigint with initial int */
+struct bksmt_bigint *bksmt_bigint_init_int(int);
+
+/* dynamically initialize bigint with initial uint64 arr */
+struct bksmt_bigint *bksmt_bigint_init_lst(uint64_t *, size_t, int);
+
+/* add two bigints, dynamically generated result */ 
+struct bksmt_bigint *bksmt_bigint_add(struct bksmt_bigint *, struct bksmt_bigint *);
+
+/* in-place addition, 1st arg is dst, 2nd is src */
+void bksmt_bigint_adds(struct bksmt_bigint *, struct bksmt_bigint *);
+
+/* get an array of numbers representing bigint with a sign int */
+void bksmt_bigint_lst_rep(struct bksmt_bigint *src, uint64_t **num, size_t *size, int *sign);
+
 
 #endif /* __BKSMT_LIB_LARGE_H__ */

@@ -1,6 +1,9 @@
 #include "xmalloc.h"
 
+#include "math.h"
+
 #include <stdlib.h>
+#include <string.h>
 #include <err.h>
 
 #define ENOMEM -2
@@ -63,3 +66,41 @@ xzalloc(size_t size)
 
     return ptr;
 }
+
+void *
+xrealloc(void *ptr, size_t csize, size_t nsize) 
+{
+    size_t msize;
+    unsigned char* nptr;
+   
+    nptr = malloc(nsize);
+    if (nptr == NULL) {
+        errx(ENOMEM, "Ran out of memory");
+        exit(ENOMEM);
+    }
+
+    msize = MIN(csize, nsize);
+
+    memcpy(nptr, ptr, msize);
+    free(ptr); 
+
+    return nptr;
+}
+
+void *
+xmdup(void *src, size_t size) 
+{
+    unsigned char* nptr;
+   
+    nptr = malloc(size);
+    if (nptr == NULL) {
+        errx(ENOMEM, "Ran out of memory");
+        exit(ENOMEM);
+    }
+
+    memcpy(nptr, src, size);
+
+    return nptr;
+}
+
+
