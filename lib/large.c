@@ -113,6 +113,12 @@ shrink_num(struct bksmt_bigint *src)
     /* special case, if i == src->size - 1, then no resizing to be done */
     if (i == src->size - 1) 
         return;
+
+    /* special case, if i == -1, then this num == 0, so still want one entry of 0's */
+    if (i == -1) {
+        i += 1;
+        src->sign = 0;
+    }
     
     src->num = xrealloc(src->num, src->size, i + 1);
     src->size = i + 1;
@@ -158,19 +164,30 @@ adds(struct bksmt_bigint *dst, struct bksmt_bigint *src) {
 static void 
 subs(struct bksmt_bigint *dst, struct bksmt_bigint *src)
 {
-//    int i; 
-//    uint64_t carry, sto;
-//
-//    for (i = 0; i < dst->size; i++) {
-//        if (i >= src->size)
-//            sto = 0;
-//        else 
-//            sto = src->num[i];
-//        
-//        sto = dst->num[i] - sto; 
-//
-//        if (sto > dst->num[i] || sto < src->num[i])
-//    }
+    int i; 
+    uint64_t borrow, sto;
+
+    borrow = 0;
+    for (i = 0; i < dst->size; i++) {
+        if (i >= src->size)
+            sto = 0;
+        else 
+            sto = src->num[i];
+        
+        sto = dst->num[i] - sto - borrow; 
+
+        /* if op causes and overflow, borrow */
+        if (sto > dst->num[i] || borrow > dst->num[i] - sto) {
+            sto += UINT64_MAX;
+            borrow = 1;
+        } else
+            borrow = 0;
+
+        dst->num[i] = sto;
+    }
+
+    /* check if we have residual 0's */
+    shrink_num(dst);
 }
 
 static int 

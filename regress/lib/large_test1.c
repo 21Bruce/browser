@@ -35,5 +35,20 @@ main(void)
     if (n3[0] != 0x8000000000000000 || n3[1] != 1)
         return 3;
 
+    free(n3);
+
+    n2[0] += one;
+    r1 = bksmt_bigint_init_lst(n1, 1, 0);
+    r2 = bksmt_bigint_init_lst(n2, 1, 1);
+    bksmt_bigint_adds(r1, r2);
+    bksmt_bigint_lst_rep(r1, &n3, &size, &sign); 
+
+    if (size != 1)
+        return 4;
+
+    if (n3[0] != one)
+        return 5;
+
+
     return 0;
 }
