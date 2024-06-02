@@ -18,8 +18,8 @@ main(void)
     int sign;
 
     one = 0x1;
-    n1[0] = one << 63;
-    n2[0] = one << 63;
+    n1[0] = (one << 63) + (one << 62);
+    n2[0] = (one << 63) + (one << 62);
     r1 = bksmt_bigint_init_lst(n1, 1, 0);
     r2 = bksmt_bigint_init_lst(n2, 1, 0);
     bksmt_bigint_adds(r1, r2);
@@ -32,7 +32,7 @@ main(void)
     if (size != 2)
         return 2;
 
-    if (n3[0] != 0 || n3[1] != 1)
+    if (n3[0] != 0x8000000000000000 || n3[1] != 1)
         return 3;
 
     return 0;

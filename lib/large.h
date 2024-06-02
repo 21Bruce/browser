@@ -31,6 +31,9 @@ struct bksmt_bigint *bksmt_bigint_init_int(int);
 /* dynamically initialize bigint with initial uint64 arr */
 struct bksmt_bigint *bksmt_bigint_init_lst(uint64_t *, size_t, int);
 
+/* dynamically initialize bigint with deep duplication of input bigint */
+struct bksmt_bigint *bksmt_bigint_dup(struct bksmt_bigint *);
+
 /* add two bigints, dynamically generated result */ 
 struct bksmt_bigint *bksmt_bigint_add(struct bksmt_bigint *, struct bksmt_bigint *);
 
