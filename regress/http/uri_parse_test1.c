@@ -62,6 +62,9 @@ main(void)
     if (stat != 0)
        return 7 + stat; 
 
+    bksmt_uri_free(sto);
+    bksmt_dict_free(parameters);
+
     /* #2 no port, should assume 0*/
     uri = "google.com/absdf/adf?a=b&t=c#abc";
     port = 0;
@@ -82,6 +85,9 @@ main(void)
     if (stat != 0)
        return 13 + stat; 
 
+    bksmt_uri_free(sto);
+    bksmt_dict_free(parameters);
+
     /* #3 no fpath, should assume none */
     uri = "google.com?a=b&t=c#abc";
     port = 0;
@@ -101,6 +107,51 @@ main(void)
 
     if (stat != 0)
        return 19 + stat; 
+
+    bksmt_uri_free(sto);
+    bksmt_dict_free(parameters);
+
+    /* #4 no params, should assume none */
+    uri = "google.com#abc";
+    port = 0;
+    protocolk = HTTP_HTTP;
+    dn = "google.com";
+    fpath = NULL;
+    anchor = "abc";
+    parameters = NULL;
+
+    stat = bksmt_uri_parse(uri, &sto);
+    if (stat != HTTP_OK)
+       return 25; 
+
+    stat = check_uri(sto, protocolk, dn, port, fpath, parameters, anchor);
+
+    if (stat != 0)
+       return 25 + stat; 
+
+    bksmt_uri_free(sto);
+
+    /* #5 no anchor, should assume none */
+    uri = "google.com";
+    port = 0;
+    protocolk = HTTP_HTTP;
+    dn = "google.com";
+    fpath = NULL;
+    parameters = NULL;
+    anchor = NULL;
+
+    stat = bksmt_uri_parse(uri, &sto);
+    if (stat != HTTP_OK)
+       return 31; 
+
+    stat = check_uri(sto, protocolk, dn, port, fpath, parameters, anchor);
+
+    if (stat != 0)
+       return 31 + stat; 
+
+    bksmt_uri_free(sto);
+
+
 
     return 0;
 }
@@ -125,10 +176,18 @@ check_uri(struct bksmt_uri *sto, int protocolk, char *dn, int port, char *fpath,
     else if (fpath != NULL && sto->fpath != NULL & strcmp(sto->fpath, fpath) != 0)
         return 4;
 
-    if (!bksmt_dict_eq(sto->parameters, parameters))
+    if (sto->parameters == NULL && parameters != NULL) 
+        return 5;
+    else if (parameters == NULL && sto->parameters != NULL)  
+        return 5;
+    if (parameters != NULL && sto->parameters != NULL && !bksmt_dict_eq(sto->parameters, parameters))
         return 5;
 
-    if (strcmp(sto->anchor, anchor) != 0)
+    if (sto->anchor == NULL && anchor != NULL) 
+        return 6;
+    else if (anchor == NULL && sto->anchor != NULL)  
+        return 6;
+    else if (anchor != NULL && sto->anchor != NULL & strcmp(sto->anchor, anchor) != 0)
         return 6;
 
     return 0;
