@@ -22,6 +22,7 @@ struct bksmt_dict *bksmt_dict_init(void);
 char              *bksmt_dict_get(struct bksmt_dict *, char *);
 void               bksmt_dict_set(struct bksmt_dict *, char *, char *);
 void               bksmt_dict_apply(struct bksmt_dict *, struct bksmt_dict *);
+int                bksmt_dict_eq(struct bksmt_dict *, struct bksmt_dict *);
 void               bksmt_dict_clear(struct bksmt_dict *, char *);
 void               bksmt_dict_print(struct bksmt_dict *);
 void               bksmt_dict_free(struct bksmt_dict *);

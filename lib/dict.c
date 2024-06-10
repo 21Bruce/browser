@@ -155,6 +155,26 @@ bksmt_dict_print(struct bksmt_dict *src)
         fprintf(stderr, "%s: %s\n", e->key, e->val);
 }
 
+
+int 
+bksmt_dict_eq(struct bksmt_dict *src1, struct bksmt_dict *src2)
+{
+    struct bksmt_dict_elem *e1, *e2;
+    int flag;
+
+    flag = 0;
+    BKSMT_DICT_FOREACH(src1, e1) {
+        BKSMT_DICT_FOREACH(src2, e2) {
+            if (strcmp(e1->key, e2->key) == 0 && strcmp(e1->val, e2->val))
+                flag = 1;
+        }
+        if (flag == 1)
+            return 0;
+        flag = 0;
+    }
+    return 1;
+}
+
 void
 bksmt_dict_free(struct bksmt_dict *dict)
 {
@@ -174,3 +194,5 @@ bksmt_dict_free(struct bksmt_dict *dict)
     free(dict->buckets);
     free(dict);
 }
+
+

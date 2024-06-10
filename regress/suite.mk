@@ -46,9 +46,11 @@ _start:
 	@echo "\"tests\": ["
 
 _end:
-	@echo "],"
 .ifndef HARNESS
+	@echo "]"
 	-@rm -rf ${COFILES} ${CDFILES} ${GCHFILES}
+.else
+	@echo "],"
 .endif
 
 .c.o:
