@@ -317,8 +317,8 @@ bksmt_http_res_recv(struct bksmt_http_res *res, struct bksmt_conn *conn)
             free(bufbck);
             return HTTP_ERROR;
         }
-        res->body = bksmt_buf_init();
-        BKSMT_BUF_ATTACH(res->body, BUF_MDYNA, bufbck, 0, chlen); 
+        res->body = bufbck;
+        res->blen = chlen;
         return HTTP_OK;
     }
 
@@ -342,8 +342,8 @@ bksmt_http_res_recv(struct bksmt_http_res *res, struct bksmt_conn *conn)
                 /* if there were no chunks, do not init a buf */
                 if (blen == 0)
                     return HTTP_OK;
-                res->body = bksmt_buf_init();
-                BKSMT_BUF_ATTACH(res->body, BUF_MDYNA, bufbck, 0, blen); 
+                res->body = bufbck;
+                res->blen = blen;
                 return HTTP_OK;
             }
             tmpbuf = xmallocarray(chlen, sizeof *tmpbuf);
@@ -433,7 +433,7 @@ bksmt_http_res_send(struct bksmt_http_res *res, struct bksmt_conn *conn)
  
     /* send body */
     if (res->body) {
-        stat = bksmt_conn_send(conn, res->body, res->body->end - res->body->start);
+        stat = bksmt_conn_msend(conn, res->body, res->blen);
         if (stat == CONN_ERROR)
             return HTTP_ERROR;
     }
@@ -441,7 +441,7 @@ bksmt_http_res_send(struct bksmt_http_res *res, struct bksmt_conn *conn)
     return HTTP_OK;
 }
 
-void
+static void
 bksmt_http_res_clear(struct bksmt_http_res *res)
 {
     assert(res != NULL);
@@ -453,14 +453,7 @@ bksmt_http_res_clear(struct bksmt_http_res *res)
         bksmt_dictcase_free(res->header.cookies);
 
     if (res->body)
-        switch(res->body->type) {
-        case BUF_MDYNA:
-            free(res->body->inf.mbuf);
-            return;
-        case BUF_FILE:
-            close(res->body->inf.fd);
-            return;
-        }
+        free(res->body);
 }
 
 void

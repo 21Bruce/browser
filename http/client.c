@@ -1,7 +1,6 @@
 #include "client.h"
 
 #include "../net/conn.h"
-#include "../lib/buf.h"
 #include "../lib/dict.h"
 #include "../lib/dictcase.h"
 #include "../lib/llkv.h"

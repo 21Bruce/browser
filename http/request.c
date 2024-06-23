@@ -1,7 +1,6 @@
 #include "request.h"
 
 #include "../lib/dict.h"
-#include "../lib/buf.h"
 #include "../lib/xstring.h"
 #include "../lib/xmalloc.h"
 #include "http.h"
@@ -14,7 +13,7 @@
 #include <assert.h>
 
 int
-bksmt_http_req_init(char *uri, int verbk, struct bksmt_buf *body, int flags, struct bksmt_http_req **rreq)
+bksmt_http_req_init(char *uri, int verbk, unsigned char *body, size_t blen, int flags, struct bksmt_http_req **rreq)
 {
     struct bksmt_uri *ustct;
     struct bksmt_http_req *req;
@@ -36,6 +35,7 @@ bksmt_http_req_init(char *uri, int verbk, struct bksmt_buf *body, int flags, str
     req->header.vmajor = 1;
     req->header.mfields = bksmt_dict_init();
     req->body = body;
+    req->blen = blen;
 
     /* if we don't want mime, quit here */
     if (BKSMT_HTTP_REQ_NOMIME & flags) {
@@ -131,7 +131,7 @@ bksmt_http_req_send(struct bksmt_http_req *req, struct bksmt_conn *conn)
  
     /* send body */
     if (req->body) {
-        stat = bksmt_conn_send(conn, req->body, req->body->end - req->body->start);
+        stat = bksmt_conn_msend(conn, req->body, req->blen);
         if (stat == CONN_ERROR)
             return HTTP_ERROR;
     }
@@ -139,7 +139,7 @@ bksmt_http_req_send(struct bksmt_http_req *req, struct bksmt_conn *conn)
     return HTTP_OK;
 }
 
-void
+static void
 bksmt_http_req_clear(struct bksmt_http_req *req)
 {
     assert(req != NULL);
@@ -151,14 +151,7 @@ bksmt_http_req_clear(struct bksmt_http_req *req)
         bksmt_dict_free(req->header.mfields);
 
     if (req->body)
-        switch(req->body->type) {
-        case BUF_MDYNA:
-            free(req->body->inf.mbuf);
-            return;
-        case BUF_FILE:
-            close(req->body->inf.fd);
-            return;
-        }
+        free(req->body);
 }
 
 void
