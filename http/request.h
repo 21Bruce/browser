@@ -2,7 +2,6 @@
 #define __BKSMT_HTTP_HEADER_H__
 
 #include "../lib/dict.h"
-#include "../lib/buf.h"
 #include "../net/conn.h"
 #include "http.h"
 
@@ -45,17 +44,16 @@ struct bksmt_http_req_header {
 
 struct bksmt_http_req {
     struct bksmt_http_req_header  header;
-    struct bksmt_buf             *body;
+    unsigned char                *body;
+    size_t                        blen;
 }; 
 
 
-int bksmt_http_req_init(char *, int, struct bksmt_buf *, int, struct bksmt_http_req **);
+int bksmt_http_req_init(char *, int, unsigned char *, size_t, int, struct bksmt_http_req **);
 
 int bksmt_http_req_send(struct bksmt_http_req *, struct bksmt_conn *);
 
 int bksmt_http_req_recv(struct bksmt_conn *, struct bksmt_http_req *); 
-
-void bksmt_http_req_clear(struct bksmt_http_req *);
 
 void bksmt_http_req_free(struct bksmt_http_req *);
 

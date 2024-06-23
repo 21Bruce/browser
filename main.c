@@ -25,7 +25,7 @@ main(int argc, char *argv[])
         return -1;
     }
 
-    stat = bksmt_http_req_init(argv[1], HTTP_GET, NULL, 0, &req);
+    stat = bksmt_http_req_init(argv[1], HTTP_GET, NULL, 0, 0, &req);
     if (stat == HTTP_ERROR){
         fprintf(stderr, "error: improper uri\n");
         return -1;
@@ -59,8 +59,8 @@ main(int argc, char *argv[])
         }
 
     if (res->body)
-        for(i = res->body->start; i < res->body->end; i++)
-            printf("%c", res->body->inf.mbuf[i]);
+        for(i = 0; i < res->blen; i++)
+            printf("%c", res->body[i]);
 
     return 0;
 }
