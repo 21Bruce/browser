@@ -1,20 +1,27 @@
 1. LIB: 
-    * Implement large arithmetic library 
 
-    * Rewrite buffer abstraction
+    * Implement Buffered Reader for http
+
+    * Rewrite dict, dictcase, llkv lib on top
+      of a map
+
+    * Implement large arithmetic library 
 
     * Testing 
 
 2. REGRESS: 
+
     * Add shell script capabilities, i.e. a server script for a test
       to interact with 
 
 3. CRYPTO: 
+
     * Implement high level ciphers 
 
     * Testing 
 
 4. HTTP: 
+
     * Implement redirect algorithm
     
     * Implement TLS 
