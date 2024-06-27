@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-static int check_uri(struct bksmt_uri *, int, char *, int, char *, struct bksmt_dict *, char *);
+static int check_uri(struct bksmt_uri *, int, char *, int, char *, struct bksmt_map *, char *);
 
 int 
 main(void)
@@ -20,7 +20,7 @@ main(void)
     char *fpath = "/absdf/adf";
     char *anchor = "abc";
     struct bksmt_uri *sto;
-    struct bksmt_dict *parameters;
+    struct bksmt_map *parameters;
 
     parameters = bksmt_dict_init();
     bksmt_dict_set(parameters,"a", "b"); 
@@ -158,7 +158,7 @@ main(void)
 
 
 static int 
-check_uri(struct bksmt_uri *sto, int protocolk, char *dn, int port, char *fpath, struct bksmt_dict *parameters, char *anchor)
+check_uri(struct bksmt_uri *sto, int protocolk, char *dn, int port, char *fpath, struct bksmt_map *parameters, char *anchor)
 {
     if (sto->protocolk != protocolk)    
         return 1;
