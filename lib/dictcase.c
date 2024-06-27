@@ -60,7 +60,7 @@ bksmt_dictcase_init(void)
     return ret;
 }
 
-struct bksmt_map *
+struct bksmt_dict *
 bksmt_dictcase_get(struct bksmt_dictcase *dictcase, char *key, int flags) 
 {
     struct bksmt_dictcase_elem *c, *nc;
@@ -99,7 +99,7 @@ bksmt_dictcase_get(struct bksmt_dictcase *dictcase, char *key, int flags)
 }
 
 void
-bksmt_dictcase_set(struct bksmt_dictcase *dictcase, char *key, struct bksmt_map *val) 
+bksmt_dictcase_set(struct bksmt_dictcase *dictcase, char *key, struct bksmt_dict *val) 
 {
     struct bksmt_dictcase_elem *c, *nc;
     unsigned long idx;
@@ -163,7 +163,7 @@ bksmt_dictcase_clear(struct bksmt_dictcase *dictcase, char *key)
 void
 bksmt_dictcase_apply(struct bksmt_dictcase *dst, struct bksmt_dictcase *src)
 {
-    struct bksmt_map *dcdict;
+    struct bksmt_dict *dcdict;
     struct bksmt_dictcase_elem *e;
 
     if (src == NULL || dst == NULL)

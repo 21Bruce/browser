@@ -28,7 +28,7 @@ static int   parse_prot(char **, int *);
 static int   parse_dn(char **, char **); 
 static int   parse_fpath(char **, char **); 
 static int   parse_port(char **, int *); 
-static int   parse_parameters(char **, struct bksmt_map **); 
+static int   parse_parameters(char **, struct bksmt_dict **); 
 
 /* build locals */
 
@@ -302,7 +302,7 @@ parse_fpath(char **pstr, char **fpath)
 }
 
 static int
-parse_parameters(char **pstr, struct bksmt_map **params) 
+parse_parameters(char **pstr, struct bksmt_dict **params) 
 {
     char *nxteq, *nxtamp, *fhash;
     char *tmpk, *tmpv;
@@ -373,8 +373,8 @@ bksmt_uri_parse(char *src, struct bksmt_uri **dst)
 {
     char *end;
     int stat, protk, port;
-    struct bksmt_map *params;
-    struct bksmt_map_elem *e;
+    struct bksmt_dict *params;
+    struct bksmt_dict_elem *e;
     struct bksmt_uri *ret;
 
     assert(dst != NULL);
@@ -495,7 +495,7 @@ bksmt_uri_build(struct bksmt_uri *uri, char **ret, int flags)
 {
     struct bksmt_http_prot_lut_entry p;
     char *portstr;
-    struct bksmt_map_elem *e;
+    struct bksmt_dict_elem *e;
     size_t len, i;
     char *tmpk, *tmpv;
 

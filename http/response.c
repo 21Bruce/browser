@@ -113,7 +113,7 @@ static int
 parse_header(struct bksmt_http_res *res, unsigned char *buf, size_t len) 
 {
     char *cptr, *end, *fdot, *nws, *ncrlf, *fdcrlf, *ncol, *tmpk, *tmpv;
-    struct bksmt_map *cookie;
+    struct bksmt_dict *cookie;
     int stat;
 
     cptr = buf;
@@ -374,7 +374,7 @@ bksmt_http_res_send(struct bksmt_http_res *res, struct bksmt_conn *conn)
     char sp, sl, *dcrlf, *tmpstr;
     size_t tmpstrlen;
     struct bksmt_http_status_lut_entry sk;
-    struct bksmt_map_elem *e;
+    struct bksmt_dict_elem *e;
     struct bksmt_dictcase_elem *de;
     int stat;
 

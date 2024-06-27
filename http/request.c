@@ -66,7 +66,7 @@ bksmt_http_req_send(struct bksmt_http_req *req, struct bksmt_conn *conn)
     char sp, sl, *dcrlf, *flend, *hpair;
     size_t pathlen, flendlen, hpairlen;
     struct bksmt_http_verb_lut_entry vk;
-    struct bksmt_map_elem *e;
+    struct bksmt_dict_elem *e;
     int stat;
 
     assert(req != NULL);
