@@ -60,7 +60,7 @@ bksmt_dictcase_init(void)
     return ret;
 }
 
-struct bksmt_dict *
+struct bksmt_map *
 bksmt_dictcase_get(struct bksmt_dictcase *dictcase, char *key, int flags) 
 {
     struct bksmt_dictcase_elem *c, *nc;
@@ -99,7 +99,7 @@ bksmt_dictcase_get(struct bksmt_dictcase *dictcase, char *key, int flags)
 }
 
 void
-bksmt_dictcase_set(struct bksmt_dictcase *dictcase, char *key, struct bksmt_dict *val) 
+bksmt_dictcase_set(struct bksmt_dictcase *dictcase, char *key, struct bksmt_map *val) 
 {
     struct bksmt_dictcase_elem *c, *nc;
     unsigned long idx;
@@ -163,7 +163,7 @@ bksmt_dictcase_clear(struct bksmt_dictcase *dictcase, char *key)
 void
 bksmt_dictcase_apply(struct bksmt_dictcase *dst, struct bksmt_dictcase *src)
 {
-    struct bksmt_dict *dcdict;
+    struct bksmt_map *dcdict;
     struct bksmt_dictcase_elem *e;
 
     if (src == NULL || dst == NULL)
@@ -172,20 +172,6 @@ bksmt_dictcase_apply(struct bksmt_dictcase *dst, struct bksmt_dictcase *src)
     BKSMT_DICTCASE_FOREACH(src, e) {
         dcdict = bksmt_dictcase_get(dst, e->key, 0);
         bksmt_dict_apply(dcdict, e->val);
-    }
-}
-
-void
-bksmt_dictcase_print(struct bksmt_dictcase *src)
-{
-    struct bksmt_dictcase_elem *de;
-
-    if (src == NULL)
-        return;
-
-    BKSMT_DICTCASE_FOREACH(src, de) {
-        fprintf(stderr, "%s: \n", de->key);
-        bksmt_dict_print(de->val);
     }
 }
 

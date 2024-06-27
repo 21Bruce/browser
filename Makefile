@@ -18,7 +18,7 @@ TESTDIRS:=./regress
 CC:=clang
 OPT:=-O0
 DEPFLAGS:=-MD -MP
-CFLAGS:=-Wextra -Wall -g 
+CFLAGS:= -g 
 
 ##########################################################################
 #                                Automated                               #

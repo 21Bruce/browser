@@ -3,31 +3,30 @@
 
 #include <stdlib.h>
 #include <sys/queue.h>
+#include <string.h>
 
-struct bksmt_dict_elem {
-    LIST_ENTRY(bksmt_dict_elem)  elist;
-    char                         *key;
-    char                         *val;
-    struct bksmt_dict_elem       *nxt;
-};
+#include "map.h"
+#include "xstring.h"
+#include "hash.h"
 
-struct bksmt_dict {
-    LIST_HEAD(, bksmt_dict_elem)  elems; 
-    size_t                        nbuckets;
-    struct bksmt_dict_elem      **buckets;  
-    size_t                        nelem;
-};
-
-struct bksmt_dict *bksmt_dict_init(void);
-char              *bksmt_dict_get(struct bksmt_dict *, char *);
-void               bksmt_dict_set(struct bksmt_dict *, char *, char *);
-void               bksmt_dict_apply(struct bksmt_dict *, struct bksmt_dict *);
-int                bksmt_dict_eq(struct bksmt_dict *, struct bksmt_dict *);
-void               bksmt_dict_clear(struct bksmt_dict *, char *);
-void               bksmt_dict_print(struct bksmt_dict *);
-void               bksmt_dict_free(struct bksmt_dict *);
+#define bksmt_dict_init() \
+    bksmt_map_init(strcmp, strcmp, xstrdup, xstrdup, djb2_hash, free, free)
+#define bksmt_dict_get(dict, key) \
+    bksmt_map_get((dict), (void *)(key))
+#define bksmt_dict_set(dict, key, val) \
+    bksmt_map_set((dict), (void *)(key), (void *)(val))
+#define bksmt_dict_apply(dict1, dict2) \
+    bksmt_map_apply((dict1), (dict2))
+#define bksmt_dict_eq(dict1, dict2) \
+    bksmt_map_eq((dict1), (dict2))
+#define bksmt_dict_clear(dict, key) \
+    bksmt_map_clear((dict), (void *)(key))
+#define bksmt_dict_print(dict, pf) \
+    bksmt_map_print((dict), (pf)) 
+#define bksmt_dict_free(dict) \
+    bksmt_map_free((dict))
 
 #define BKSMT_DICT_FOREACH(dict, e) \
-    LIST_FOREACH(e, &((dict)->elems), elist)
+    BKSMT_MAP_FOREACH((dict), (e))
 
 #endif

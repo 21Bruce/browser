@@ -39,7 +39,7 @@ struct bksmt_http_req_header {
     char *fpath;
     int vminor;
     int vmajor;
-    struct bksmt_dict *mfields;
+    struct bksmt_map *mfields;
 };
 
 struct bksmt_http_req {

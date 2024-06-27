@@ -147,7 +147,7 @@ struct bksmt_http_res_header {
     int vminor;
     int vmajor;
     int statk;
-    struct bksmt_dict *mfields;
+    struct bksmt_map *mfields;
     struct bksmt_dictcase *cookies;
 };
 

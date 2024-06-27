@@ -14,7 +14,7 @@
 struct bksmt_dictcase_elem {
     LIST_ENTRY(bksmt_dictcase_elem)  elist;
     char                            *key;
-    struct bksmt_dict               *val;
+    struct bksmt_map                *val;
     struct bksmt_dictcase_elem      *nxt;
 };
 
@@ -26,10 +26,9 @@ struct bksmt_dictcase {
 };
 
 struct bksmt_dictcase *bksmt_dictcase_init(void);
-struct bksmt_dict     *bksmt_dictcase_get(struct bksmt_dictcase *, char *, int);
-void                   bksmt_dictcase_set(struct bksmt_dictcase *, char *, struct bksmt_dict *);
+struct bksmt_map      *bksmt_dictcase_get(struct bksmt_dictcase *, char *, int);
+void                   bksmt_dictcase_set(struct bksmt_dictcase *, char *, struct bksmt_map *);
 void                   bksmt_dictcase_apply(struct bksmt_dictcase *, struct bksmt_dictcase *);
-void                   bksmt_dictcase_print(struct bksmt_dictcase *);
 void                   bksmt_dictcase_clear(struct bksmt_dictcase *, char *);
 void                   bksmt_dictcase_free(struct bksmt_dictcase *);
 

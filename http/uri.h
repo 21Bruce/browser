@@ -8,7 +8,7 @@ struct bksmt_uri {
     char              *dn;
     char              *fpath;
     int                port;
-    struct bksmt_dict *parameters;
+    struct bksmt_map  *parameters;
     char              *anchor;
 };
 

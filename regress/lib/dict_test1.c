@@ -8,8 +8,8 @@
 int
 main(void) 
 {
-    struct bksmt_dict *dhandle = bksmt_dict_init();
-    struct bksmt_dict *d2handle = bksmt_dict_init();
+    struct bksmt_mat *dhandle = bksmt_dict_init();
+    struct bksmt_map *d2handle = bksmt_dict_init();
     char key1[] = "k1", key2[] = "k2", val1[] = "v1", val2[] = "v2";
     char *box;
 
