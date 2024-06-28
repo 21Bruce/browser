@@ -15,7 +15,25 @@
 #define HASHRESIZE 2
 #define HASHCAP(map) ((float)((map)->nelem)/(float)((map)->nbuckets))
 
-static void bksmt_map_regrow(struct bksmt_map *);
+#define VCMP(map, val1, val2) ((map)->vcmp != NULL ? (map)->vcmp((val1), (val2)) : val1 != val2)
+
+#define KCMP(map, key1, key2) ((map)->kcmp != NULL ? (map)->kcmp((key1), (key2)) : key1 != key2)
+
+#define KCPY(map, key) (map)->kcpy != NULL ? (map)->kcpy((key)) : key
+
+
+#define VCPY(map, val) (map)->vcpy != NULL ? (map)->vcpy((val)) : val
+
+#define KCPY(map, key) (map)->kcpy != NULL ? (map)->kcpy((key)) : key
+
+#define VFREE(map, val)       \
+    if ((map)->vfree != NULL) \
+        (map)->vfree((val))
+
+#define KFREE(map, key)       \
+    if ((map)->kfree != NULL) \
+        (map)->kfree((key))
+
 
 static void
 bksmt_map_regrow(struct bksmt_map *map)
@@ -77,8 +95,9 @@ bksmt_map_get(struct bksmt_map *map, void *key)
     idx = map->khash(key) % map->nbuckets;
 
     for (c = map->buckets[idx]; c != NULL; c = c->nxt) {
-        if (map->kcmp(key, c->key) == 0)
+        if (KCMP(map, key, c->key) == 0) {
             return c->val;
+        }
     }
 
     return NULL;
@@ -97,15 +116,15 @@ bksmt_map_set(struct bksmt_map *map, void *key, void *val)
 
     bidx = map->khash(key) % map->nbuckets;
     for (c = map->buckets[bidx]; c != NULL; c = c->nxt) {
-        if (map->kcmp(key, c->key) == 0) {
-            map->vfree(c->val);
-            c->val = map->vcpy(val);
+        if (KCMP(map, key, c->key) == 0) {
+            VFREE(map, c->val);
+            c->val = VCPY(map, val); 
             return;
         }
     }
     nc = xmalloc(sizeof *nc);
-    nc->key = map->kcpy(key);
-    nc->val = map->vcpy(val);
+    nc->key = KCPY(map, key);     
+    nc->val = VCPY(map, val); 
     nc->nxt = map->buckets[bidx];
     map->buckets[bidx] = nc;
     map->nelem += 1;
@@ -120,7 +139,7 @@ bksmt_map_clear(struct bksmt_map *map, void *key)
  
     assert(map != NULL);
     bidx = map->khash(key) % map->nbuckets;
-    for (c = map->buckets[bidx]; c != NULL && map->kcmp(key, c->key) != 0; c = c->nxt) {
+    for (c = map->buckets[bidx]; c != NULL && KCMP(map, key, c->key) != 0; c = c->nxt) {
         p = c;
     }
 
@@ -131,8 +150,8 @@ bksmt_map_clear(struct bksmt_map *map, void *key)
         else 
             map->buckets[bidx] = c->nxt;
 
-        map->kfree(c->key);
-        map->vfree(c->val);
+        KFREE(map, c->key);
+        VFREE(map, c->val);
         LIST_REMOVE(c, elist);
         free(c);
         map->nelem -= 1;
@@ -175,7 +194,7 @@ bksmt_map_eq(struct bksmt_map *src1, struct bksmt_map *src2)
     flag = 0;
     BKSMT_MAP_FOREACH(src1, e1) {
         BKSMT_MAP_FOREACH(src2, e2) {
-            if (src1->kcmp(e1->key, e2->key) == 0 && src1->vcmp(e1->val, e2->val))
+            if (KCMP(src1, e1->key, e2->key) == 0 && VCMP(src1, e1->val, e2->val))
                 flag = 1;
         }
         if (flag == 1)
@@ -196,8 +215,8 @@ bksmt_map_free(struct bksmt_map *map)
     for (i = 0; i < map->nbuckets; i++) {
         for (c = map->buckets[i]; c != NULL; c = ctmp) {
             ctmp = c->nxt;
-            map->vfree(c->val);
-            map->kfree(c->key);
+            VFREE(map, c->val);
+            KFREE(map, c->key);
             free(c);
         }
     }
