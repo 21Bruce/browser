@@ -12,9 +12,12 @@
 BKSMT_MAP_TYPE(dict, char, char)
 
 #define bksmt_dict_init() \
-    bksmt_map_init(strcmp, strcmp, xstrdup, xstrdup, djb2_hash, free, free)
+    bksmt_map_init(strcmp, strcmp, xstrdup, xstrdup, djb2_hash, free, free, NULL, 1)
+
+struct bksmt_dict *bksmt_dict_vinit(void);
+
 #define bksmt_dict_get(dict, key) \
-    bksmt_map_get((struct bksmt_map *)(dict), (void *)(key))
+    bksmt_map_get((struct bksmt_map *)(dict), (void *)(key), 0)
 #define bksmt_dict_set(dict, key, val) \
     bksmt_map_set((struct bksmt_map *)(dict), (void *)(key), (void *)(val))
 #define bksmt_dict_apply(dict1, dict2) \

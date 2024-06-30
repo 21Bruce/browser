@@ -154,6 +154,7 @@ bksmt_http_client_do(struct bksmt_http_client *client,
 
     /* make cookie header */
     cookies = bksmt_llkv_get(client->cookiejar, auth, 0);
+    if (cookies == NULL)
     BKSMT_DICTCASE_FOREACH(cookies, dce) {
         val = bksmt_dict_get(dce->val, "Value");
         if (cookief == NULL)

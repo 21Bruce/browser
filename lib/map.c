@@ -19,9 +19,6 @@
 
 #define KCMP(map, key1, key2) ((map)->kcmp != NULL ? (map)->kcmp((key1), (key2)) : key1 != key2)
 
-#define KCPY(map, key) (map)->kcpy != NULL ? (map)->kcpy((key)) : key
-
-
 #define VCPY(map, val) (map)->vcpy != NULL ? (map)->vcpy((val)) : val
 
 #define KCPY(map, key) (map)->kcpy != NULL ? (map)->kcpy((key)) : key
@@ -67,7 +64,7 @@ bksmt_map_regrow(struct bksmt_map *map)
 }
 
 struct bksmt_map *
-bksmt_map_init(int(*vcmp)(void*,void*), int(*kcmp)(void*,void*), void*(*vcpy)(void*), void*(*kcpy)(void*), unsigned long(*khash)(void*), void(*vfree)(void*), void(*kfree)(void*))
+bksmt_map_init(int(*vcmp)(void*,void*), int(*kcmp)(void*,void*), void*(*vcpy)(void*), void*(*kcpy)(void*), unsigned long(*khash)(void*), void(*vfree)(void*), void(*kfree)(void*), void*(*vinit)(), int cvos)
 {
     struct bksmt_map *ret = xmalloc(sizeof *ret);
     ret->vcmp = vcmp;
@@ -77,17 +74,19 @@ bksmt_map_init(int(*vcmp)(void*,void*), int(*kcmp)(void*,void*), void*(*vcpy)(vo
     ret->khash = khash;
     ret->vfree = vfree;
     ret->kfree = kfree;
+    ret->vinit = vinit;
     ret->nbuckets = HASHINIT;
     ret->buckets = xzallocarray(ret->nbuckets, sizeof *(ret->buckets));
     ret->nelem = 0;
+    ret->cvos = cvos;
     LIST_INIT(&(ret->elems));
     return ret;
 }
 
 void *
-bksmt_map_get(struct bksmt_map *map, void *key)
+bksmt_map_get(struct bksmt_map *map, void *key, int flags)
 {
-    struct bksmt_map_elem *c;
+    struct bksmt_map_elem *c, *nc;
     unsigned long idx;
 
     assert(map != NULL);
@@ -100,7 +99,24 @@ bksmt_map_get(struct bksmt_map *map, void *key)
         }
     }
 
-    return NULL;
+    if ((flags & BKSMT_MAP_NINIT) != 0 || map->vinit == NULL)
+        return NULL;
+
+    /* check for regrow */
+    if (HASHCAP(map) >= HASHREFILL)
+        bksmt_map_regrow(map);
+
+    /* create new elem */
+    nc = xmalloc(sizeof *nc);
+    nc->key = KCPY(map, key);
+    nc->val = map->vinit();
+    nc->nxt = map->buckets[idx];
+    map->buckets[idx] = nc;
+    map->nelem += 1;
+    LIST_INSERT_HEAD(&(map->elems), nc, elist);
+
+    /* return fresh val */
+    return nc->val;
 }
 
 void 
@@ -111,20 +127,21 @@ bksmt_map_set(struct bksmt_map *map, void *key, void *val)
     
     assert(map != NULL);
 
-    if (HASHCAP(map) >= HASHREFILL) 
-        bksmt_map_regrow(map);
-
     bidx = map->khash(key) % map->nbuckets;
     for (c = map->buckets[bidx]; c != NULL; c = c->nxt) {
         if (KCMP(map, key, c->key) == 0) {
             VFREE(map, c->val);
-            c->val = VCPY(map, val); 
+            c->val = map->cvos ? (VCPY(map, val)) : val; 
             return;
         }
     }
+
+    if (HASHCAP(map) >= HASHREFILL) 
+        bksmt_map_regrow(map);
+
     nc = xmalloc(sizeof *nc);
     nc->key = KCPY(map, key);     
-    nc->val = VCPY(map, val); 
+    nc->val = map->cvos ? (VCPY(map, val)) : val; 
     nc->nxt = map->buckets[bidx];
     map->buckets[bidx] = nc;
     map->nelem += 1;
@@ -179,6 +196,16 @@ bksmt_map_print(struct bksmt_map *src, void(*print)(void*,void*))
 
     BKSMT_MAP_FOREACH(src, e)
         print(e->key, e->val);
+}
+
+struct bksmt_map *
+bksmt_map_cpy(struct bksmt_map *src)
+{
+    struct bksmt_map *dst;
+
+    dst = bksmt_map_init(src->vcmp, src->kcmp, src->vcpy, src->kcpy, src->khash, src->vfree, src->kfree, src->vinit, src->cvos);
+    bksmt_map_apply(dst, src);
+    return dst;
 }
 
 
