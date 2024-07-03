@@ -14,9 +14,9 @@ struct bksmt_bufread {
     unsigned char             buf[BKSMT_BUFREAD_SIZE];
     int                       pos;
     int                       size;
-    int                       eof;
+    int                       workstat;
     int (*readtap)(void *, unsigned char *, int *);
-    pthread_t                 *worker;
+    pthread_t                 *writethr;
     pthread_mutex_t           *buflock;
 };
 

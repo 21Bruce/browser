@@ -21,43 +21,63 @@ bksmt_bufread_init(void *tap, int (*readtap)(void *, unsigned char *, int*))
     ret->readtap = readtap;
     ret->pos = 0;
     ret->size = 0;
-    ret->eof = 0;
+    ret->workstat = BKSMT_BUFREAD_OK;
     ret->buflock = xzalloc(sizeof *(ret->buflock));
-    ret->worker = xzalloc(sizeof *(ret->worker));
-    if (pthread_mutex_init(ret->buflock, NULL)) {
-       free(ret->buflock); 
-       free(ret->worker); 
-       free(ret);
-       fprintf(stderr, "ERR0\n");
-       return NULL;
-    }
-    if (pthread_create(ret->worker, NULL, fill_buf, (void *) ret)) {
-       free(ret->buflock); 
-       free(ret->worker); 
-       free(ret);
-       fprintf(stderr, "ERR1\n");
-       return NULL;
-    }
-
-    if (pthread_detach(*(ret->worker))) {
-       free(ret->buflock); 
-       free(ret->worker); 
-       free(ret);
-       fprintf(stderr, "ERR2\n");
-       return NULL;
-    }
+    ret->writethr = xzalloc(sizeof *(ret->writethr));
+    if (pthread_mutex_init(ret->buflock, NULL)) goto fail; 
+    if (pthread_create(ret->writethr, NULL, fill_buf, (void *) ret)) goto fail; 
+    if (pthread_detach(*(ret->writethr))) goto fail;
 
     return ret;
+
+fail:
+    free(ret->buflock); 
+    free(ret->writethr); 
+    free(ret);
+    return NULL;
 }
 
 static void
 fill_buf(struct bksmt_bufread *br)
 {
+    int stat, esize, endpos;
+
     while(1) {
         pthread_mutex_lock(br->buflock);
-        pthread_mutex_unlock(br->buflock);
+
+        /* if buffer is full, give up the lock */
+        if (br->size == BKSMT_BUFREAD_SIZE) {
+            pthread_mutex_unlock(br->buflock);
+            continue;
+        }
+
+        /* if another thread read an EOF or error, give up lock and quit */
+        if (br->workstat == BKSMT_BUFREAD_EOF || br->workstat == BKSMT_BUFREAD_ERR) {
+            pthread_mutex_unlock(br->buflock);
+            return;
+        }
+
+        /* if we reach here, we can write to the buffer */
+
+        endpos = (br->size + br->pos) % BKSMT_BUFREAD_SIZE;
+        /* case 1: no wraparound */
+        if (endpos >= br->pos) {
+            esize = BKSMT_BUFREAD_SIZE - endpos;
+            stat = br->readtap(br->tap, endpos, &esize);
+            goto update; 
+        }
+
+        /* case 2: wraparound */
+        esize = br->pos - endpos;
+        stat = br->readtap(br->tap, endpos, &esize);
+        
+update:
+    br->workstat = stat;
+    br->size += esize;
+    pthread_mutex_unlock(br->buflock);
     }
 }
+
 int 
 bksmt_bufread_read(struct bksmt_bufread *br, unsigned char *outbuf, int flag, int *size)
 {
@@ -65,7 +85,13 @@ bksmt_bufread_read(struct bksmt_bufread *br, unsigned char *outbuf, int flag, in
 
     pthread_mutex_lock(br->buflock);
 
-    if (br->size == 0 && br->eof) {
+    if (br->workstat == BKSMT_BUFREAD_ERR) {
+        *size = 0;
+        pthread_mutex_unlock(br->buflock);
+        return BKSMT_BUFREAD_ERR;
+    }
+
+    if (br->size == 0 && br->workstat == BKSMT_BUFREAD_EOF) {
         *size = 0;
         pthread_mutex_unlock(br->buflock);
         return BKSMT_BUFREAD_EOF;
@@ -97,11 +123,11 @@ bksmt_bufread_read(struct bksmt_bufread *br, unsigned char *outbuf, int flag, in
     stat = br->readtap(br->tap, outbuf + br->size, &esize);
     *size = osize + esize;
 
-    /* if the tap encountered and EOF, we need to store this in the br */
-    if (stat == BKSMT_BUFREAD_EOF) br->eof = 1;
+    /* if the tap encountered an EOF or ERR, we need to store this in the br */
+    br->workstat = stat;
     pthread_mutex_unlock(br->buflock);
 
-    /* if there was an err or EOF, return that */
+    /* if there was an ERR or EOF, return that */
     return stat;
 
 }
@@ -109,8 +135,8 @@ bksmt_bufread_read(struct bksmt_bufread *br, unsigned char *outbuf, int flag, in
 void
 bksmt_bufread_free(struct bksmt_bufread *src)
 {
-    if (src->worker)
-        free(src->worker);
+    if (src->writethr)
+        free(src->writethr);
     if (src->buflock)
         free(src->buflock);
     free(src);
@@ -137,7 +163,7 @@ flush_buf(struct bksmt_bufread *br, int size, unsigned char *out)
     memcpy(out, br->buf + br->pos, BKSMT_BUFREAD_SIZE - br->pos);
     /* copy wraparound */
     memcpy(out + BKSMT_BUFREAD_SIZE - br->pos, br->buf, diff);
-    br->pos = (br->pos + size) % BKSMT_BUFREAD_SIZE; 
+    br->pos = diff; 
     br->size -= size;
 
 }
