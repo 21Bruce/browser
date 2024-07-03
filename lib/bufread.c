@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <pthread.h>
+#include <sched.h>
 #include <unistd.h>
 #include <string.h>
 
@@ -26,7 +27,6 @@ bksmt_bufread_init(void *tap, int (*readtap)(void *, unsigned char *, int*))
     ret->writethr = xzalloc(sizeof *(ret->writethr));
     if (pthread_mutex_init(ret->buflock, NULL)) goto fail; 
     if (pthread_create(ret->writethr, NULL, fill_buf, (void *) ret)) goto fail; 
-    if (pthread_detach(*(ret->writethr))) goto fail;
 
     return ret;
 
@@ -37,7 +37,7 @@ fail:
     return NULL;
 }
 
-static void
+static void 
 fill_buf(struct bksmt_bufread *br)
 {
     int stat, esize, endpos;
@@ -45,16 +45,18 @@ fill_buf(struct bksmt_bufread *br)
     while(1) {
         pthread_mutex_lock(br->buflock);
 
-        /* if buffer is full, give up the lock */
-        if (br->size == BKSMT_BUFREAD_SIZE) {
-            pthread_mutex_unlock(br->buflock);
-            continue;
-        }
-
         /* if another thread read an EOF or error, give up lock and quit */
         if (br->workstat == BKSMT_BUFREAD_EOF || br->workstat == BKSMT_BUFREAD_ERR) {
             pthread_mutex_unlock(br->buflock);
-            return;
+            pthread_exit(0);
+        }
+
+
+        /* if buffer is full, give up the lock */
+        if (br->size == BKSMT_BUFREAD_SIZE) {
+            pthread_mutex_unlock(br->buflock);
+            sched_yield();
+            continue;
         }
 
         /* if we reach here, we can write to the buffer */
@@ -63,13 +65,13 @@ fill_buf(struct bksmt_bufread *br)
         /* case 1: no wraparound */
         if (endpos >= br->pos) {
             esize = BKSMT_BUFREAD_SIZE - endpos;
-            stat = br->readtap(br->tap, endpos, &esize);
+            stat = br->readtap(br->tap, br->buf + endpos, &esize);
             goto update; 
         }
 
         /* case 2: wraparound */
         esize = br->pos - endpos;
-        stat = br->readtap(br->tap, endpos, &esize);
+        stat = br->readtap(br->tap, br->buf + endpos, &esize);
         
 update:
     br->workstat = stat;
@@ -96,11 +98,12 @@ bksmt_bufread_read(struct bksmt_bufread *br, unsigned char *outbuf, int flag, in
         pthread_mutex_unlock(br->buflock);
         return BKSMT_BUFREAD_EOF;
     }
+
     
         
     /* if we have enough in the buffer to back the call, then do it */
-    if (size <= br->size) {
-        flush_buf(br, size, outbuf);
+    if (*size <= br->size) {
+        flush_buf(br, *size, outbuf);
         pthread_mutex_unlock(br->buflock);
         return BKSMT_BUFREAD_OK; 
     }
@@ -137,6 +140,12 @@ bksmt_bufread_read(struct bksmt_bufread *br, unsigned char *outbuf, int flag, in
 void
 bksmt_bufread_free(struct bksmt_bufread *src)
 {
+    /* force worker to exit */
+    pthread_mutex_lock(src->buflock);
+    src->workstat = BKSMT_BUFREAD_EOF;
+    pthread_mutex_unlock(src->buflock);
+    pthread_join(*(src->writethr), NULL);
+
     if (src->writethr)
         free(src->writethr);
     if (src->buflock)
