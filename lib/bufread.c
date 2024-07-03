@@ -96,6 +96,7 @@ bksmt_bufread_read(struct bksmt_bufread *br, unsigned char *outbuf, int flag, in
         pthread_mutex_unlock(br->buflock);
         return BKSMT_BUFREAD_EOF;
     }
+    
         
     /* if we have enough in the buffer to back the call, then do it */
     if (size <= br->size) {
@@ -104,9 +105,10 @@ bksmt_bufread_read(struct bksmt_bufread *br, unsigned char *outbuf, int flag, in
         return BKSMT_BUFREAD_OK; 
     }
 
+
     /* if we reach here, br->size < size */
     osize = br->size;
-    extra = size - br->size;
+    extra = *size - br->size;
 
     /* flush the whole buffer */
     flush_buf(br, br->size, outbuf);
@@ -120,7 +122,7 @@ bksmt_bufread_read(struct bksmt_bufread *br, unsigned char *outbuf, int flag, in
 
     /* if we reach here, we need to source the rest of the request from the tap via the readtap func */
     esize = extra;
-    stat = br->readtap(br->tap, outbuf + br->size, &esize);
+    stat = br->readtap(br->tap, outbuf + osize, &esize);
     *size = osize + esize;
 
     /* if the tap encountered an EOF or ERR, we need to store this in the br */
