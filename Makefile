@@ -18,7 +18,8 @@ TESTDIRS:=./regress
 CC:=clang
 OPT:=-O0
 DEPFLAGS:=-MD -MP
-CFLAGS:=-Wextra -Wall -g 
+CFLAGS:=-Wextra -Wall -g
+LIBFLAGS!= cat deps.txt | awk 'BEGIN{} { print "-" $$0 } END{}'
 
 ##########################################################################
 #                                Automated                               #
@@ -31,7 +32,7 @@ INCFLAGS+=-I${DIR}
 .endfor
 
 # accumulate flags
-ALLFLAGS:=${CFLAGS} ${DEPFLAGS} ${INCFLAGS} ${OPT}
+ALLFLAGS:=${CFLAGS} ${LIBFLAGS} ${DEPFLAGS} ${INCFLAGS} ${OPT}
 
 # get all c files
 CFILES!= find ${SUBCODEDIRS} -name "*.c"

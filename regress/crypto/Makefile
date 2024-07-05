@@ -5,4 +5,7 @@ PWD != pwd
 # get topdir 
 TOPDIR := ${PWD}/../../ 
 
+# get dep file
+DEPFILE := ${PWD}/../../deps.txt
+
 .include "../suite.mk"

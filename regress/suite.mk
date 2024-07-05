@@ -3,6 +3,11 @@ CC:=clang
 OPT:=-O0
 DEPFLAGS:=-MD -MP
 CFLAGS:=-Wextra -Wall -g 
+.ifdef DEPFILE 
+LIBFLAGS!= cat ${DEPFILE} | awk 'BEGIN{} { print "-" $$0 } END{}'
+.else
+LIBFLAGS:=
+.endif
 
 # if no DEBUG level set, assume none
 .ifndef DEBUG
@@ -15,7 +20,7 @@ TOPDIR != pwd
 .endif
 
 # accumulate flags
-ALLFLAGS:=${CFLAGS} ${DEPFLAGS} ${OPT}
+ALLFLAGS:=${CFLAGS} ${DEPFLAGS} ${OPT} ${LIBFLAGS}
 
 # get all top-level sub-dirs 
 SUBDIRS != ls -d ${TOPDIR}/*/
