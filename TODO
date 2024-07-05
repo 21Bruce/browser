@@ -2,9 +2,6 @@
 
     * Implement Buffered Reader for http
 
-    * Rewrite dict, dictcase, llkv lib on top
-      of a map
-
     * Implement large arithmetic library 
 
     * Testing 
