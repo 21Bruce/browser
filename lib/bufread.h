@@ -25,7 +25,7 @@ struct bksmt_bufread {
 
 struct bksmt_bufread *bksmt_bufread_init(void *, int (*)(void *, unsigned char *, int*), void (*)(void *));
 int bksmt_bufread_read(struct bksmt_bufread *, unsigned char *, int, int *);
-int bksmt_bufread_readall(struct bksmt_bufread *, unsigned char **);
+int bksmt_bufread_readall(struct bksmt_bufread *, unsigned char **, int *);
 void bksmt_bufread_free(struct bksmt_bufread *);
 
 

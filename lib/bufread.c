@@ -131,7 +131,49 @@ end:
     pthread_mutex_unlock(br->buflock);
     pthread_cond_signal(br->emptycond);
     return stat;
+}
 
+int 
+bksmt_bufread_readall(struct bksmt_bufread *br, unsigned char **ret, int *size)
+{
+    int stat, bsize, msize, rsize;
+    unsigned char *out; 
+     
+    bsize = 0;
+    msize = BKSMT_BUFREAD_SIZE;
+    rsize = msize;
+    out = xzalloc(msize);
+
+    /* keep reading data in till EOF or ERR */
+    while ((stat = bksmt_bufread_read(br, out + bsize, 0, &rsize)) == BKSMT_BUFREAD_OK) {
+        /* add read in size to current buf size */
+        bsize += rsize;
+        /* if buf size is equal to total mem size, expand buf */
+        if (bsize == msize) {
+            out = xrealloc(out, msize, msize + BKSMT_BUFREAD_SIZE);
+            msize += BKSMT_BUFREAD_SIZE;
+        }
+        /* max size we can read in is mem size - current buf size */
+        rsize = msize - bsize;
+    }
+    bsize += rsize;
+
+    /* if there was an error, free resources and abort */
+    if (stat == BKSMT_BUFREAD_ERR) {
+        *size = 0;
+        *ret = NULL;
+        free(out);
+        return stat;
+    }
+
+    /* if the max size of the memory is less than the data size in the buffer, resize it */
+    if (msize != bsize)
+        out = xrealloc(out, msize, bsize);
+
+    /* return the buffer */
+    *size = bsize;
+    *ret = out;
+    return stat;
 }
 
 void
@@ -181,7 +223,6 @@ flush_buf(struct bksmt_bufread *br, int size, unsigned char *out)
 static void 
 print_debug_info(struct bksmt_bufread *br)
 {
-    int i;
     fprintf(stderr, "Buffer Pos: %d\n", br->pos); 
     fprintf(stderr, "Buffer Size: %d\n", br->size); 
 }
