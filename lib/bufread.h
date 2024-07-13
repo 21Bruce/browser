@@ -10,18 +10,20 @@
 #define BKSMT_BUFREAD_ASYNC   1
 
 struct bksmt_bufread {
-    void                     *tap;
-    unsigned char             buf[BKSMT_BUFREAD_SIZE];
-    int                       pos;
-    int                       size;
-    int                       workstat;
+    void                                      *tap;
+    unsigned char                             buf[BKSMT_BUFREAD_SIZE];
+    int                                       pos;
+    int                                       size;
+    int                                       workstat;
     int (*readtap)(void *, unsigned char *, int *);
-    pthread_t                 *writethr;
-    pthread_mutex_t           *buflock;
+    pthread_t                                 *writethr;
+    pthread_mutex_t                           *buflock;
+    pthread_cond_t                            *emptycond;
+    void (*cleantap)(void *);
 };
 
 
-struct bksmt_bufread *bksmt_bufread_init(void *, int (*)(void *, unsigned char *, int*));
+struct bksmt_bufread *bksmt_bufread_init(void *, int (*)(void *, unsigned char *, int*), void (*)(void *));
 int bksmt_bufread_read(struct bksmt_bufread *, unsigned char *, int, int *);
 int bksmt_bufread_readall(struct bksmt_bufread *, unsigned char **);
 void bksmt_bufread_free(struct bksmt_bufread *);

@@ -10,9 +10,10 @@
 
 static void flush_buf(struct bksmt_bufread *, int, unsigned char *);
 static void fill_buf(struct bksmt_bufread *);
+static void print_debug_info(struct bksmt_bufread *);
 
 struct bksmt_bufread *
-bksmt_bufread_init(void *tap, int (*readtap)(void *, unsigned char *, int*))
+bksmt_bufread_init(void *tap, int (*readtap)(void *, unsigned char *, int*), void (*cleantap)(void*))
 {
     struct bksmt_bufread *ret;
 
@@ -20,14 +21,18 @@ bksmt_bufread_init(void *tap, int (*readtap)(void *, unsigned char *, int*))
 
     ret->tap = tap;
     ret->readtap = readtap;
+    ret->cleantap = cleantap;
     ret->pos = 0;
     ret->size = 0;
     ret->workstat = BKSMT_BUFREAD_OK;
     ret->buflock = xzalloc(sizeof *(ret->buflock));
+    ret->emptycond = xzalloc(sizeof *(ret->emptycond));
     ret->writethr = xzalloc(sizeof *(ret->writethr));
     if (pthread_mutex_init(ret->buflock, NULL)) goto fail; 
+    if (pthread_cond_init(ret->emptycond, NULL)) goto fail; 
     if (pthread_create(ret->writethr, NULL, fill_buf, (void *) ret)) goto fail; 
-
+    if (pthread_detach(*(ret->writethr))) goto fail; 
+ 
     return ret;
 
 fail:
@@ -44,39 +49,31 @@ fill_buf(struct bksmt_bufread *br)
 
     while(1) {
         pthread_mutex_lock(br->buflock);
+        while(br->size == BKSMT_BUFREAD_SIZE && br->workstat == BKSMT_BUFREAD_OK)
+            pthread_cond_wait(br->emptycond, br->buflock);
 
         /* if another thread read an EOF or error, give up lock and quit */
-        if (br->workstat == BKSMT_BUFREAD_EOF || br->workstat == BKSMT_BUFREAD_ERR) {
+        if (br->workstat != BKSMT_BUFREAD_OK) {
             pthread_mutex_unlock(br->buflock);
             pthread_exit(0);
-        }
-
-
-        /* if buffer is full, give up the lock */
-        if (br->size == BKSMT_BUFREAD_SIZE) {
-            pthread_mutex_unlock(br->buflock);
-            sched_yield();
-            continue;
         }
 
         /* if we reach here, we can write to the buffer */
 
         endpos = (br->size + br->pos) % BKSMT_BUFREAD_SIZE;
-        /* case 1: no wraparound */
-        if (endpos >= br->pos) {
+        if (endpos > br->pos) {
+            /* case 1: no wraparound */
             esize = BKSMT_BUFREAD_SIZE - endpos;
             stat = br->readtap(br->tap, br->buf + endpos, &esize);
-            goto update; 
+        } else {
+            /* case 2: wraparound */
+            esize = br->pos - endpos;
+            stat = br->readtap(br->tap, br->buf + endpos, &esize);
         }
 
-        /* case 2: wraparound */
-        esize = br->pos - endpos;
-        stat = br->readtap(br->tap, br->buf + endpos, &esize);
-        
-update:
-    br->workstat = stat;
-    br->size += esize;
-    pthread_mutex_unlock(br->buflock);
+        br->workstat = stat;
+        br->size += esize;
+        pthread_mutex_unlock(br->buflock);
     }
 }
 
@@ -89,23 +86,21 @@ bksmt_bufread_read(struct bksmt_bufread *br, unsigned char *outbuf, int flag, in
 
     if (br->workstat == BKSMT_BUFREAD_ERR) {
         *size = 0;
-        pthread_mutex_unlock(br->buflock);
-        return BKSMT_BUFREAD_ERR;
+        stat = BKSMT_BUFREAD_ERR;
+        goto end;
     }
 
     if (br->size == 0 && br->workstat == BKSMT_BUFREAD_EOF) {
         *size = 0;
-        pthread_mutex_unlock(br->buflock);
-        return BKSMT_BUFREAD_EOF;
+        stat = BKSMT_BUFREAD_EOF;
+        goto end;
     }
-
-    
         
     /* if we have enough in the buffer to back the call, then do it */
     if (*size <= br->size) {
         flush_buf(br, *size, outbuf);
-        pthread_mutex_unlock(br->buflock);
-        return BKSMT_BUFREAD_OK; 
+        stat = BKSMT_BUFREAD_OK; 
+        goto end;
     }
 
 
@@ -119,8 +114,8 @@ bksmt_bufread_read(struct bksmt_bufread *br, unsigned char *outbuf, int flag, in
     /* if async flag is set, send out only what is in the buffer */
     if (flag & BKSMT_BUFREAD_ASYNC) {
         *size = osize;
-        pthread_mutex_unlock(br->buflock);
-        return BKSMT_BUFREAD_OK;
+        stat = BKSMT_BUFREAD_OK;
+        goto end;
     }
 
     /* if we reach here, we need to source the rest of the request from the tap via the readtap func */
@@ -130,9 +125,11 @@ bksmt_bufread_read(struct bksmt_bufread *br, unsigned char *outbuf, int flag, in
 
     /* if the tap encountered an EOF or ERR, we need to store this in the br */
     br->workstat = stat;
-    pthread_mutex_unlock(br->buflock);
 
     /* if there was an ERR or EOF, return that */
+end:
+    pthread_mutex_unlock(br->buflock);
+    pthread_cond_signal(br->emptycond);
     return stat;
 
 }
@@ -144,12 +141,15 @@ bksmt_bufread_free(struct bksmt_bufread *src)
     pthread_mutex_lock(src->buflock);
     src->workstat = BKSMT_BUFREAD_EOF;
     pthread_mutex_unlock(src->buflock);
+    pthread_cond_signal(src->emptycond);
     pthread_join(*(src->writethr), NULL);
 
-    if (src->writethr)
-        free(src->writethr);
-    if (src->buflock)
-        free(src->buflock);
+    /* run cleanup routine if we have one */
+    if (src->cleantap) src->cleantap(src->tap);
+
+    free(src->writethr);
+    pthread_mutex_destroy(src->buflock);
+    pthread_cond_destroy(src->emptycond);
     free(src);
 }
 
@@ -176,5 +176,13 @@ flush_buf(struct bksmt_bufread *br, int size, unsigned char *out)
     memcpy(out + BKSMT_BUFREAD_SIZE - br->pos, br->buf, diff);
     br->pos = diff; 
     br->size -= size;
-
 }
+
+static void 
+print_debug_info(struct bksmt_bufread *br)
+{
+    int i;
+    fprintf(stderr, "Buffer Pos: %d\n", br->pos); 
+    fprintf(stderr, "Buffer Size: %d\n", br->size); 
+}
+
