@@ -21,8 +21,8 @@ bufread(unsigned char *buf, unsigned char *out, int *size)
         return BKSMT_BUFREAD_OK;
     }
     memcpy(out, buf + pos, BSIZE-pos);
-    pos = BSIZE;
     *size = BSIZE-pos;
+    pos = BSIZE;
     return BKSMT_BUFREAD_EOF;
 }
 
