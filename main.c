@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "http/cookie.h"
 #include "http/client.h"
@@ -7,6 +8,7 @@
 #include "http/request.h"
 #include "lib/dictcase.h"
 #include "lib/dict.h"
+#include "lib/bufread.h"
 
 int 
 main(int argc, char *argv[])
@@ -18,7 +20,8 @@ main(int argc, char *argv[])
     struct bksmt_dict_elem *de;
     struct bksmt_dictcase_elem *dce;
     char *val;
-    int stat, i;
+    unsigned char *out;
+    int stat, i, size;
 
     if (argc < 2) {
         fprintf(stderr, "Usage: ./booksmart uri\n");
@@ -58,9 +61,11 @@ main(int argc, char *argv[])
             printf("\n");
         }
 
-    if (res->body)
-        for(i = 0; i < res->blen; i++)
-            printf("%c", res->body[i]);
+    if (res->body) {
+        stat = bksmt_bufread_readall(res->body, &out, &size);
+        for(i = 0; i < size; i++)
+            printf("%c", (char)out[i]); 
+    }
 
     return 0;
 }

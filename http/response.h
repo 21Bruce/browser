@@ -4,6 +4,7 @@
 #include "http.h"
 #include "../lib/dict.h"
 #include "../lib/dictcase.h"
+#include "../lib/bufread.h"
 #include "../net/conn.h"
 
 #include <stdlib.h>
@@ -147,14 +148,13 @@ struct bksmt_http_res_header {
     int vminor;
     int vmajor;
     int statk;
-    struct bksmt_map *mfields;
+    struct bksmt_dict *mfields;
     struct bksmt_dictcase *cookies;
 };
 
 struct bksmt_http_res {
     struct bksmt_http_res_header header;
-    unsigned char               *body;
-    size_t                       blen;
+    struct bksmt_bufread         *body;
 };
 
 struct bksmt_http_res *bksmt_http_res_init(void);

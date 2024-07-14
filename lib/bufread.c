@@ -61,7 +61,7 @@ fill_buf(struct bksmt_bufread *br)
         /* if we reach here, we can write to the buffer */
 
         endpos = (br->size + br->pos) % BKSMT_BUFREAD_SIZE;
-        if (endpos > br->pos) {
+        if ((br->size == 0 && br->pos == 0) || endpos > br->pos) {
             /* case 1: no wraparound */
             esize = BKSMT_BUFREAD_SIZE - endpos;
             stat = br->readtap(br->tap, br->buf + endpos, &esize);

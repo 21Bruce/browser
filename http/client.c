@@ -184,22 +184,20 @@ bksmt_http_client_do(struct bksmt_http_client *client,
 
 
     /* alloc res and recv  */
-    *res = xmalloc(sizeof **res);
+    *res = xzalloc(sizeof **res);
     stat = bksmt_http_res_recv(*res, client->conn);
     if (stat != CONN_OK) {
         stat = HTTP_ERROR;
         goto abort2;
     }
 
-    cfield = bksmt_dict_get((*res)->header.mfields, "Connection");
-    /* if connection field says close, then close */
-    if (cfield == NULL || strcasecmp(cfield, "close") == 0) 
-        bksmt_conn_close(client->conn);
+//    cfield = bksmt_dict_get((*res)->header.mfields, "Connection");
+//    /* if connection field says close, then close */
+//    if (cfield == NULL || strcasecmp(cfield, "close") == 0) 
+//        bksmt_conn_close(client->conn);
 
-    if ((*res)->header.cookies != NULL && !(flags & HTTP_CLIENT_DO_NOCOOK)) {
+    if ((*res)->header.cookies != NULL && !(flags & HTTP_CLIENT_DO_NOCOOK)) 
         bksmt_dictcase_apply(cookies, (*res)->header.cookies);
-        /* no longer need this */
-    }
 
     free(auth);
     stat = HTTP_OK;

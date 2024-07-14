@@ -2,6 +2,7 @@
 
 #include "../net/conn.h"
 #include "../lib/xstring.h"
+#include "../lib/bufread.h"
 #include "../lib/strconv.h"
 #include "../lib/xmalloc.h"
 #include "mime.h"
@@ -12,16 +13,43 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 
-#define RBUFLEN 8000 
+#define RBUFLEN 8000
+
+/* body buffered reader inf */
+
+struct bksmt_http_chunk_tap {
+    /* aic -- amount in chunk, 0 if we need to read in a new chunk, and
+     * positive definite representing how much left in a chunk
+     * if we are in the middle of reading a chunk  */
+    uint64_t               aic;
+    /* eof flag to prevent undefined reads */
+    int                    eof;
+    /* connection to source from */
+    struct bksmt_conn      *conn;
+};
+static int bksmt_http_chunk_read(void *, unsigned char *, int *);
+static void bksmt_http_chunk_free(void *);
+
+struct bksmt_http_content_length_tap {
+    /* cll -- content left length, positive definite 
+     * representing how much left to read from content */
+    uint64_t               cll;
+    /* connection to source from */
+    struct bksmt_conn      *conn;
+};
+static int bksmt_http_content_length_read(void *, unsigned char *, int *);
+static void bksmt_http_content_length_free(void *);
+
 
 /* locals for parsing */
 static int parse_header(struct bksmt_http_res *, unsigned char *, size_t); 
+static int inttostatk(int);
+
 
 static char *adv_ws(char *, char *);
-
-static int inttostatk(int);
 
 /* ok */
 #define HTTP_RES_PARSE_OK    0
@@ -243,18 +271,17 @@ kerror:
 int
 bksmt_http_res_recv(struct bksmt_http_res *res, struct bksmt_conn *conn)
 {
-    char rbuf[RBUFLEN], chlenbuf[sizeof(size_t)];
+    char rbuf[RBUFLEN];
     int pos, stat, r1f, n1f, r2f, n2f, endf;
     size_t hlen, chlen, blen;
-    char *lenstr; 
-    unsigned char *bufbck, *tmpbuf;
+    char *lenstr, *cfield; 
+    struct bksmt_http_chunk_tap *chtap;
+    struct bksmt_http_content_length_tap *cltap;
 
     assert(res != NULL && conn != NULL);
 
     /* init res body and bufbck */
     res->body = NULL;
-    bufbck = "";
-    blen = 0;
 
     /* find delimeter between header and body */
     /* XXX: this is REALLY inefficient, should find a better way */
@@ -308,63 +335,36 @@ bksmt_http_res_recv(struct bksmt_http_res *res, struct bksmt_conn *conn)
     if (res->header.mfields == NULL)
         return HTTP_OK;
 
-    /* if there is a content length, we read it all in */
+    /* need this to determine cleanup func for body buffered reader */
+    cfield = bksmt_dict_get(res->header.mfields, "Connection");
+
+    /* if there is a content length, establish content-length buffered reader */
     if((lenstr = bksmt_dict_get(res->header.mfields, "Content-Length"))) {
-        chlen = cstrtoint(lenstr);
-        bufbck = xmallocarray(chlen, sizeof *bufbck);
-        stat = bksmt_conn_mrecv(conn, bufbck, chlen);
-        if (stat == CONN_ERROR) {
-            free(bufbck);
-            return HTTP_ERROR;
-        }
-        res->body = bufbck;
-        res->blen = chlen;
+        cltap = xzalloc(sizeof *cltap);
+        cltap->cll = cstrtoint(lenstr);
+        cltap->conn = conn;
+        /* if connection field says close, then close */
+        if (cfield == NULL || strcasecmp(cfield, "close") == 0) 
+            res->body = bksmt_bufread_init(cltap, bksmt_http_content_length_read, bksmt_http_content_length_free); 
+        else
+            res->body = bksmt_bufread_init(cltap, bksmt_http_content_length_read, free); 
         return HTTP_OK;
     }
 
     /* if there is a chunked transfer encoding, parse it and read it in */
     if (strcasecmp(bksmt_dict_get(res->header.mfields, "Transfer-Encoding"), "chunked") == 0) {
-        for(; ;) {
-            for(pos = 0, stat = bksmt_conn_mrecv(conn, chlenbuf, 1);
-                    chlenbuf[pos] != '\r'; 
-                    pos++, stat = bksmt_conn_mrecv(conn, chlenbuf + pos, 1)) {
-                if (stat != CONN_OK || pos >= sizeof(size_t)) 
-                    goto error;
-            }
-            stat = bksmt_conn_mrecv(conn, rbuf, 1);
-            if (stat == CONN_ERROR) 
-                goto error;
-            chlen = hexcsubstrtoint(chlenbuf, chlenbuf + pos);
-            if (chlen == 0) {
-                stat = bksmt_conn_mrecv(conn, rbuf, 2);
-                if (stat == CONN_ERROR) 
-                    goto error;
-                /* if there were no chunks, do not init a buf */
-                if (blen == 0)
-                    return HTTP_OK;
-                res->body = bufbck;
-                res->blen = blen;
-                return HTTP_OK;
-            }
-            tmpbuf = xmallocarray(chlen, sizeof *tmpbuf);
-            stat = bksmt_conn_mrecv(conn, tmpbuf, chlen);
-            if (stat == CONN_ERROR) 
-                goto error1;
-            blen = xasprintf(&bufbck, "%s%.*s", bufbck, chlen, tmpbuf);
-            free(tmpbuf);
-            stat = bksmt_conn_mrecv(conn, rbuf, 2);
-            if (stat == CONN_ERROR) 
-                goto error;
-        }
-error1:
-        free(tmpbuf);
-error:
-        if (bufbck != NULL)
-            free(bufbck);
-        return HTTP_ERROR;
+        chtap = xzalloc(sizeof *chtap);
+        chtap->aic = 0;
+        chtap->eof = 0;
+        chtap->conn = conn;
+        if (cfield == NULL || strcasecmp(cfield, "close") == 0) 
+            res->body = bksmt_bufread_init(chtap, bksmt_http_chunk_read, bksmt_http_chunk_free); 
+        else
+            res->body = bksmt_bufread_init(chtap, bksmt_http_chunk_read, free); 
+        return HTTP_OK;
     }
 
-    return HTTP_OK;
+    return HTTP_ERROR;
 }
 
 
@@ -431,14 +431,198 @@ bksmt_http_res_send(struct bksmt_http_res *res, struct bksmt_conn *conn)
     if (stat == CONN_ERROR) 
         return HTTP_ERROR;
  
+    /* COME BACK */
     /* send body */
-    if (res->body) {
-        stat = bksmt_conn_msend(conn, res->body, res->blen);
-        if (stat == CONN_ERROR)
-            return HTTP_ERROR;
-    }
+//    if (res->body) {
+//        stat = bksmt_conn_msend(conn, res->body, res->blen);
+//        if (stat == CONN_ERROR)
+//            return HTTP_ERROR;
+//    }
 
     return HTTP_OK;
+}
+
+static int 
+bksmt_http_content_length_read(void *tap, unsigned char *out, int *size)
+{
+    /*
+     * This function must output *size bytes of the http
+     * body at out buffer, or as many bytes till an EOF if there are less bytes
+     * than *size remaining. We use this function if the body is in the content
+     * length format. In this case, we always know the max size of the message,
+     * stored in variable tap->cll.
+     *
+     */
+
+    /* value cast of tap */
+    struct bksmt_http_content_length_tap *vtap;
+
+    /* storage of func statuses */
+    int stat;
+
+    vtap = (struct bksmt_http_content_length_tap *)tap;
+
+    /* if we do not have any content, return EOF */
+    if (vtap->cll == 0) {
+        *size = 0; 
+        return BKSMT_BUFREAD_EOF;
+    }
+
+    /* case, we have enough content to source request */
+    if (*size < vtap->cll) {
+        stat = bksmt_conn_mrecv(vtap->conn, out, *size);
+        if (stat == CONN_ERROR)
+            goto error;
+        vtap->cll -= *size;
+        return BKSMT_BUFREAD_OK;
+    }
+
+    /* case, we do not have enough content to source request */
+    stat = bksmt_conn_mrecv(vtap->conn, out, vtap->cll);
+    if (stat == CONN_ERROR)
+        goto error;
+    *size = vtap->cll;
+    vtap->cll = 0;
+    return BKSMT_BUFREAD_EOF;
+
+error:
+    *size = 0;
+    return BKSMT_BUFREAD_ERR;
+}
+
+static void 
+bksmt_http_content_length_free(void *tap)
+{
+    struct bksmt_http_content_length_tap *vtap;
+
+    vtap = (struct bksmt_http_content_length_tap *)tap; 
+    bksmt_conn_close(vtap->conn);
+    free(vtap);
+}
+
+static int 
+bksmt_http_chunk_read(void *tap, unsigned char *out, int *size)
+{
+
+    /*
+     * This function must output *size bytes of the http
+     * body at out buffer, or as many bytes till an EOF if there are less bytes
+     * than *size remaining. We use this function if the body is in the chunked
+     * transfer encoding format.
+     *
+     * The chunked transfer encoding is composed of multiple chunks of the form 
+     *  ... \r\n CHUNKSIZE \r\n data[CHUNKSIZE] ... 
+     * Where the end of the message has format
+     *  ... \r\n 0 \r\n \r\n ... 
+     *
+     * The tap variable contains the connection and a 64-bit uint "aic" representing
+     * the amount left in the current chunk. If it is zero, then we need to process 
+     * in the "\r\n CHUNKSIZE \r\n" part of the sequence. We always read in the 
+     * first "\r\n" part of the sequence after processing a chunk for convenience,
+     * so we have to read "CHUNKSIZE \r\n". We read as many chunks as necessary
+     * to source the req. If we end in the middle of a chunk, we set aic to the # of
+     * remaining bytes in the chunk.
+     */
+
+
+    /* value cast of tap */
+    struct bksmt_http_chunk_tap *vtap;
+
+    /* rsize -- size we have read in so far */
+    uint64_t rsize;
+
+    /* stat -- storage of func statuses */
+    int stat, i;
+
+    /* chlenbuf -- we use this to read in the length of the chunk before converting */
+    /* garbage -- we use this to read in crlf sequences that we don't need */
+    unsigned char chlenbuf[sizeof(uint64_t)], garbage[2];
+
+    /* init vals */
+    vtap = (struct bksmt_http_chunk_tap *)tap;
+    rsize = 0;
+
+    /* if we do not have any content, return EOF */
+    if (vtap->eof) {
+        *size = 0; 
+        return BKSMT_BUFREAD_EOF;
+    }
+
+    /* keep reading while we haven't read in proper size. handle EOF separately */
+    while (rsize != *size) {
+        /* in this case, we need to start processing a new chunk */
+        if (vtap->aic == 0) {
+
+            /* read length of chunk string into chlenbuf */
+            stat = bksmt_conn_mrecv(vtap->conn, chlenbuf, 1);
+            for(i = 0; chlenbuf[i] != '\r'; i++) {
+                if (stat != CONN_OK || i + 1 >= sizeof(uint64_t)) 
+                    goto error;
+                stat = bksmt_conn_mrecv(vtap->conn, chlenbuf + i + 1, 1);
+            }
+
+            /* in the last for loop, we read in the CR of the CRLF seq
+             * so we need to read in the LF */
+            stat = bksmt_conn_mrecv(vtap->conn, garbage, 1);
+            if (stat == CONN_ERROR) 
+                goto error;
+            /* convert chlenbuf to an actual chunk length number */
+            vtap->aic = hexcsubstrtoint(chlenbuf, chlenbuf + i);
+            /* if vtap->aic == 0, this is the "end of transmission" chunk */
+            if (vtap->aic == 0) {
+                /* read in ending CRLF to garbage */
+                stat = bksmt_conn_mrecv(vtap->conn, garbage, 2);
+                if (stat == CONN_ERROR) 
+                    goto error;
+
+                /* set eof flag */
+                vtap->eof = 1;
+
+                /* return size and eof */
+                *size = rsize;
+                return BKSMT_BUFREAD_EOF;
+            }
+        }
+        
+        /* case, we have to stop in middle of a chunk */
+        if (rsize + vtap->aic > *size) {
+            /* read in enough to source req */
+            stat = bksmt_conn_mrecv(vtap->conn, out + rsize, *size - rsize);
+            if (stat == CONN_ERROR) 
+                goto error;
+            /* update aic and return */
+            vtap->aic -= *size - rsize;
+            return BKSMT_BUFREAD_OK;
+        }
+
+        /* case, have to read whole chunk */
+        stat = bksmt_conn_mrecv(vtap->conn, out + rsize, vtap->aic);
+        if (stat == CONN_ERROR) 
+            goto error;
+        /* read in CRLF of next chunk */
+        stat = bksmt_conn_mrecv(vtap->conn, garbage, 2);
+        if (stat == CONN_ERROR) 
+            goto error;
+
+        /* add what we read in */
+        rsize += vtap->aic;
+        /* since we read in a whole chunk, this is 0 */
+        vtap->aic = 0;
+    }
+
+error:
+    *size = 0;
+    return BKSMT_BUFREAD_ERR;
+}
+
+static void 
+bksmt_http_chunk_free(void *tap)
+{
+    struct bksmt_http_chunk_tap *vtap;
+
+    vtap = (struct bksmt_http_chunk_tap *)tap; 
+    bksmt_conn_close(vtap->conn);
+    free(vtap);
 }
 
 static void
