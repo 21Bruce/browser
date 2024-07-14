@@ -637,7 +637,7 @@ bksmt_http_res_clear(struct bksmt_http_res *res)
         bksmt_dictcase_free(res->header.cookies);
 
     if (res->body)
-        free(res->body);
+        bksmt_bufread_free(res->body);
 }
 
 void
