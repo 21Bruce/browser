@@ -20,7 +20,7 @@ main(int argc, char *argv[])
     struct bksmt_dict_elem *de;
     struct bksmt_dictcase_elem *dce;
     char *val;
-    unsigned char *out;
+    char out[4096];
     int stat, i, size;
 
     if (argc < 2) {
@@ -33,6 +33,8 @@ main(int argc, char *argv[])
         fprintf(stderr, "error: improper uri\n");
         return -1;
     }
+
+    bksmt_dict_set(req->header.mfields, "Accept-Language", "de"); 
 
     client = bksmt_http_client_init();
 
@@ -62,9 +64,13 @@ main(int argc, char *argv[])
         }
 
     if (res->body) {
-        stat = bksmt_bufread_readall(res->body, &out, &size);
-        for(i = 0; i < size; i++)
-            printf("%c", (char)out[i]); 
+        stat = BKSMT_BUFREAD_OK;
+        while (stat == BKSMT_BUFREAD_OK) {
+            size = 4096;
+            stat = bksmt_bufread_read(res->body, out, 0, &size);
+            for(i = 0; i < size; i++)
+                printf("%c", (char)out[i]); 
+        }
     }
 
     return 0;

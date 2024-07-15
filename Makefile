@@ -18,7 +18,7 @@ TESTDIRS:=./regress
 CC:=clang
 OPT:=-O0
 DEPFLAGS:=-MD -MP
-CFLAGS:= -g 
+CFLAGS:= -g -pthread
 
 ##########################################################################
 #                                Automated                               #
