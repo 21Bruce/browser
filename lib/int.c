@@ -63,7 +63,7 @@ bksmt_int_cmp(struct bksmt_int *i1, struct bksmt_int *i2)
 
     /* if we reach here, i1->sign == i2->sign */
 
-    /* if i1 is larger than i2, return 1 * sign, since for negative numbers\
+    /* if i1 is larger than i2, return 1 * sign, since for negative numbers
      * larger mag means less 
      */
     if (i1->size > i2->size)
@@ -76,8 +76,9 @@ bksmt_int_cmp(struct bksmt_int *i1, struct bksmt_int *i2)
     /* if we reach here, i1->sign == i2->sign && i1->size == i2->size */
 
     /* loop through and compare individual places.
-     * if i1 is bigger, then return 1 multiplied by sign */
-     * if i2 is bigger, then return -1 multiplied by sign */
+     * if i1 is bigger, then return 1 multiplied by sign 
+     * if i2 is bigger, then return -1 multiplied by sign 
+     */
     for(i = 0; i < i1->size; i++)
         if (i1->num[i] > i2->num[i])
             return 1 * i1->sign;
