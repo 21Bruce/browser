@@ -46,5 +46,8 @@ void bksmt_int_adds(struct bksmt_int *, struct bksmt_int *);
 /* get an array of numbers representing int with a sign int */
 void bksmt_int_lst_rep(struct bksmt_int *src, uint64_t **num, size_t *size, int *sign);
 
+/* free function */
+void bksmt_int_free(struct bksmt_int *);
+
 
 #endif /* __BKSMT_LIB_INT_H__ */

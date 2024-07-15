@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #include "xmalloc.h"
 #include "int.h"
@@ -42,8 +43,8 @@ bksmt_int_dup(struct bksmt_int *i)
     ret = xmalloc(sizeof(*ret));
 
     ret->num = xmdup(i->num, i->size * sizeof(*(i->num)));
-    ret->size = size;
-    ret->sign = sign;
+    ret->size = i->size;
+    ret->sign = i->sign;
 
     return ret;
 }
@@ -51,15 +52,19 @@ bksmt_int_dup(struct bksmt_int *i)
 int
 bksmt_int_cmp(struct bksmt_int *i1, struct bksmt_int *i2)
 {
-    size_t i;
+    int i;
+
 
     /* if i1 is pos and i2 neg, then return 1 */
     if (i1->sign > i2->sign)
         return 1;
 
+
     /* if i2 is pos and i1 neg, then return -1 */
     if (i2->sign > i1->sign)
         return -1;
+
+
 
     /* if we reach here, i1->sign == i2->sign */
 
@@ -68,6 +73,7 @@ bksmt_int_cmp(struct bksmt_int *i1, struct bksmt_int *i2)
      */
     if (i1->size > i2->size)
         return 1 * i1->sign;
+
 
     /* smae logic here as previous case but reversed */
     if (i2->size > i1->size)
@@ -79,15 +85,22 @@ bksmt_int_cmp(struct bksmt_int *i1, struct bksmt_int *i2)
      * if i1 is bigger, then return 1 multiplied by sign 
      * if i2 is bigger, then return -1 multiplied by sign 
      */
-    for(i = 0; i < i1->size; i++)
-        if (i1->num[i] > i2->num[i])
+    for(i = (i1->size)-1; i >= 0; i--) {
+        if ((i1->num)[i] > (i2->num)[i])
             return 1 * i1->sign;
-        else if (i2->num[i] > i1->num[i])
+        else if ((i2->num)[i] > (i1->num)[i])
             return -1 * i1->sign;
+    }
+
 
     /* if we reach here, numbers are identical */
     return 0;
 }
 
 
-
+void 
+bksmt_int_free(struct bksmt_int *i1)
+{
+    free(i1->num);
+    free(i1);
+}
