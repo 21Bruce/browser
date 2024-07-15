@@ -1,5 +1,4 @@
 #include "conn.h"
-#include "../lib/buf.h"
 #include "../lib/xmalloc.h"
 #include "../lib/strconv.h"
 
@@ -60,7 +59,7 @@ bksmt_conn_init(char *addr, char *port, int type, int flags,
          * and addr to nbo and use those
          */
         c->addrlen = sizeof (c->addr); 
-        c->addr.sin_family = htons(AF_INET);
+        c->addr.sin_family = htons((sa_family_t)AF_INET);
         c->addr.sin_port = htons(cstrtoint(port));
         if (inet_pton(family, addr, &(c->addr.sin_addr)) != 1) 
             goto abort;
@@ -104,40 +103,6 @@ bksmt_conn_open(struct bksmt_conn *c)
     return CONN_OK;
 }
 
-int
-bksmt_conn_send(struct bksmt_conn *c, struct bksmt_buf *b, 
-        size_t nsend) {
-
-    unsigned char *buf;
-    size_t nbytes, written;
-
-    assert(nsend <= b->end - b->start);
-
-    /* init dynamic array buffer */
-    buf = xmallocarray(nsend, sizeof *buf);
-
-    /* read all of buffer into dynamic array*/
-    nbytes = bksmt_buf_read(b, buf, nsend * sizeof *buf);
-    if (nbytes != nsend)
-        goto abort1;
-
-    /* write buffer across connection */
-    written = 0;
-    while((written < nsend) && (nbytes = write(c->sd, 
-                    buf + written, nsend - written))) {
-        if (nbytes <= 0)
-            goto abort1;
-        written += nbytes;
-    }
-
-    free(buf);
-    return CONN_OK;
-
-abort1:
-    free(buf);    
-abort:
-    return CONN_ERROR;
-}
 
 int
 bksmt_conn_msend(struct bksmt_conn *c, unsigned char *buf, 
@@ -172,70 +137,6 @@ bksmt_conn_mrecv(struct bksmt_conn *c, unsigned char *buf,
     }
 
     return CONN_OK;
-}
-
-int
-bksmt_conn_recv(struct bksmt_conn *c, struct bksmt_buf *b, 
-        size_t nrecv) {
-
-    unsigned char *buf;
-    size_t nbytes, written;
-
-    assert(nrecv <= b->end - b->start);
-
-    buf = xmallocarray(nrecv, sizeof *buf);
-
-    written = 0;
-    while((written < nrecv) && (nbytes = read(c->sd, 
-                    buf + written, nrecv - written))) {
-        if (nbytes <= 0)
-            goto abort1;
-        written += nbytes;
-    }
-
-    nbytes = bksmt_buf_write(b, buf, nrecv * sizeof *buf);
-    if (nbytes != nrecv)
-        goto abort1;
-
-    free(buf);
-    return CONN_OK;
-
-abort1:
-    free(buf);    
-abort:
-    return CONN_ERROR;
-}
-
-int 
-bksmt_conn_recv_chain(struct bksmt_conn *c, 
-        struct bksmt_buf_chain *ch, size_t nrecv)
-{
-    unsigned char *buf;
-    size_t nbytes, written;
-
-    buf = xmallocarray(nrecv, sizeof *buf);
-
-    written = 0;
-    while((written < nrecv) && (nbytes = read(c->sd, 
-                    buf + written, nrecv - written))) {
-        if (nbytes <= 0)
-            goto abort1;
-        written += nbytes;
-    }
-
-    for (; ch != NULL; ch = ch->nxt) {
-        assert(nrecv <= ch->buf->end - ch->buf->start);
-        nbytes = bksmt_buf_write(ch->buf, buf, nrecv * sizeof *buf);
-        if (nbytes != nrecv)
-            goto abort1;
-    }
-    free(buf);
-    return CONN_OK;
-
-abort1:
-    free(buf);    
-abort:
-    return CONN_ERROR;
 }
 
 void

@@ -176,7 +176,7 @@ subs(struct bksmt_bigint *dst, struct bksmt_bigint *src)
         
         sto = dst->num[i] - sto - borrow; 
 
-        /* if op causes and overflow, borrow */
+        /* if op causes an overflow, borrow */
         if (sto > dst->num[i] || borrow > dst->num[i] - sto) {
             sto += UINT64_MAX;
             borrow = 1;

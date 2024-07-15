@@ -4,7 +4,7 @@
 #include "http.h"
 #include "../lib/dict.h"
 #include "../lib/dictcase.h"
-#include "../lib/buf.h"
+#include "../lib/bufread.h"
 #include "../net/conn.h"
 
 #include <stdlib.h>
@@ -154,7 +154,7 @@ struct bksmt_http_res_header {
 
 struct bksmt_http_res {
     struct bksmt_http_res_header header;
-    struct bksmt_buf *body;
+    struct bksmt_bufread         *body;
 };
 
 struct bksmt_http_res *bksmt_http_res_init(void);

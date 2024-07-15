@@ -12,27 +12,36 @@
 #include <stdlib.h>
 
 #include "dictcase.h"
+#include "map.h"
 
-struct bksmt_llkv_elem {
-    char                    *key;
-    struct bksmt_dictcase   *val;
-    struct bksmt_llkv_elem  *nxt;
-};
+BKSMT_MAP_TYPE(llkv, char, struct bksmt_dictcase)
 
-struct bksmt_llkv {
-    size_t                       nbuckets;
-    struct bksmt_llkv_elem     **buckets;
-    size_t                       nelem;
-};
+#define bksmt_llkv_init() \
+    bksmt_map_init(bksmt_map_eq, strcmp, bksmt_map_cpy, xstrdup, djb2_hash, bksmt_map_free, free, bksmt_dictcase_vinit, 0)
 
-struct bksmt_llkv     *bksmt_llkv_init(void);
-struct bksmt_dictcase *bksmt_llkv_get(struct bksmt_llkv *, char *, int);
-void                   bksmt_llkv_clear(struct bksmt_llkv *, char *);
-void                   bksmt_llkv_free(struct bksmt_llkv *);
+struct bksmt_llkv *bksmt_llkv_vinit(void);
+
+#define bksmt_llkv_get(lv, key, flag) \
+    bksmt_map_get((struct bksmt_map *)(lv), (void *)(key), flag)
+#define bksmt_llkv_set(lv, key, val) \
+    bksmt_map_set((struct bksmt_map *)(lv), (void *)(key), (void *)(val))
+#define bksmt_llkv_apply(lv1, lv2) \
+    bksmt_map_apply((struct bksmt_map *)(lv1), (struct bksmt_map *)(lv2))
+#define bksmt_llkv_eq(lv1, lv2) \
+    bksmt_map_eq((struct bksmt_map *)(lv1), (struct bksmt_map *)(lv2))
+#define bksmt_llkv_clear(lv, key) \
+    bksmt_map_clear((struct bksmt_map *)(lv), (void *)(key))
+#define bksmt_llkv_print(lv, pf) \
+    bksmt_map_print((struct bksmt_map *)(lv), (pf)) 
+#define bksmt_llkv_free(lv) \
+    bksmt_map_free((struct bksmt_map *)(lv))
+
+#define BKSMT_LLKV_FOREACH(lv, e) \
+    BKSMT_MAP_FOREACH((struct bksmt_map *)(lv), (e))
 
 /* get flags */
 
-/* do not create if dictcase is not found */
-#define BKSMT_LLKV_NCREAT 0x1
+/* do not create if dc is not found */
+#define BKSMT_LLKV_NCREAT BKSMT_MAP_NINIT 
 
 #endif /* __BKSMT_LIB_LLKV_H__ */

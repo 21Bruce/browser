@@ -22,7 +22,7 @@ adv_ws(char *src)
 }
 
 int
-parse_cookie(char *src, struct bksmt_dict **cookie)
+parse_cookie(char *src, struct bksmt_map **cookie)
 {
     char *nxteq, *nxtscol, *tmpk, *tmpv;
 
@@ -110,9 +110,9 @@ kerror:
 }
 
 int
-build_cookie(struct bksmt_dict *cookie, char **ret)
+build_cookie(struct bksmt_map *cookie, char **ret)
 {
-    struct bksmt_dict_elem *e;
+    struct bksmt_map_elem *e;
     char *name, *val;
 
     assert(cookie != NULL);
@@ -130,7 +130,7 @@ build_cookie(struct bksmt_dict *cookie, char **ret)
     /* loop through remaining attrs and append */
     BKSMT_DICT_FOREACH(cookie, e)
         if (strcmp(e->key, "Name") && strcmp(e->key, "Value")) {
-            if (*(e->val) == 0)
+            if (*((char *)e->val) == 0)
                 xasprintf(ret, "%s; %s", *ret, e->key);
             else
                 xasprintf(ret, "%s; %s=%s", *ret, e->key, e->val);
