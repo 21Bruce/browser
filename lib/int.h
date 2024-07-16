@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#define BKSMT_INT_SL_MAX 18446744073709551615
+
 /* unbounded int arithmetic functions interface */
 
 /* representation of a big int */
@@ -44,7 +46,10 @@ struct bksmt_int *bksmt_int_add(struct bksmt_int *, struct bksmt_int *);
 void bksmt_int_adds(struct bksmt_int *, struct bksmt_int *);
 
 /* get an array of numbers representing int with a sign int */
-void bksmt_int_lst_rep(struct bksmt_int *src, uint64_t **num, size_t *size, int *sign);
+void bksmt_int_lst_rep(struct bksmt_int *, uint64_t **, size_t *, int *);
+
+/* performs the following operation: #1 += #2 */
+void bksmt_int_adds(struct bksmt_int *, struct bksmt_int *);
 
 /* free function */
 void bksmt_int_free(struct bksmt_int *);
