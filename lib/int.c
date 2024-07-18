@@ -7,12 +7,16 @@
 
 /* expand the int's internal array to size w/leading zeroes */
 static void expand_num(struct bksmt_int *, size_t);
+
 /* shrink the int's internal array by removing leading zeroes */
 static void shrink_num(struct bksmt_int *);
+
 /* add first's number array to second's number array interpreted as uints */
 static void adds_base(struct bksmt_int *, struct bksmt_int *);
+
 /* sub second's number array from first's number array interpreted as uints, assumes first is larger than second, store in first */
 static void subs_base(struct bksmt_int *, struct bksmt_int *);
+
 /* sub second's number array from first's number array interpreted as uints, assumes first is larger than second, store in second */
 static void subss_base(struct bksmt_int *, struct bksmt_int *);
 
@@ -116,6 +120,26 @@ bksmt_int_cmp(struct bksmt_int *i1, struct bksmt_int *i2)
     return 0;
 }
 
+struct bksmt_int *
+bksmt_int_add(struct bksmt_int *i1, struct bksmt_int *i2)
+{
+    struct bksmt_int *ret;
+
+    ret = bksmt_int_dup(i1);
+    bksmt_int_adds(ret, i2);
+    return ret;
+}
+
+struct bksmt_int *
+bksmt_int_sub(struct bksmt_int *i1, struct bksmt_int *i2)
+{
+    struct bksmt_int *ret;
+
+    ret = bksmt_int_dup(i1);
+    bksmt_int_subs(ret, i2);
+    return ret;
+}
+
 void
 bksmt_int_adds(struct bksmt_int *i1, struct bksmt_int *i2)
 {
@@ -139,6 +163,17 @@ bksmt_int_adds(struct bksmt_int *i1, struct bksmt_int *i2)
         subss_base(i2, i1);
         i1->sign *= -1;
     }
+}
+
+void
+bksmt_int_subs(struct bksmt_int *i1, struct bksmt_int *i2)
+{
+    /* flip i2 sign, since a - b = a + (-b) */
+    i2->sign *= -1;
+    /* perform i1 + (-i2) */
+    bksmt_int_adds(i1, i2);
+    /* set i2 sign back */
+    i2->sign *= -1;
 }
 
 

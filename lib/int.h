@@ -42,14 +42,37 @@ int bksmt_int_cmp(struct bksmt_int *, struct bksmt_int *);
 /* add two ints, dynamically generated result */ 
 struct bksmt_int *bksmt_int_add(struct bksmt_int *, struct bksmt_int *);
 
+/* sub two ints, dynamically generated result */ 
+struct bksmt_int *bksmt_int_sub(struct bksmt_int *, struct bksmt_int *);
+
+struct bksmt_int *bksmt_int_mul(struct bksmt_int *, struct bksmt_int *);
+
+struct bksmt_int *bksmt_int_div(struct bksmt_int *, struct bksmt_int *);
+
+struct bksmt_int *bksmt_int_mod(struct bksmt_int *, struct bksmt_int *);
+
+struct bksmt_int *bksmt_int_modmul(struct bksmt_int *, struct bksmt_int *, struct bksmt_int *);
+
 /* in-place addition, 1st arg is dst, 2nd is src */
 void bksmt_int_adds(struct bksmt_int *, struct bksmt_int *);
 
+/* in-place subtraction, 1st arg is dst, 2nd is src */
+void bksmt_int_subs(struct bksmt_int *, struct bksmt_int *);
+
+/* in-place multiplication, 1st arg is dst, 2nd is src */
+void bksmt_int_muls(struct bksmt_int *, struct bksmt_int *);
+
+/* in-place division, 1st arg is dst, 2nd is src */
+void bksmt_int_divs(struct bksmt_int *, struct bksmt_int *);
+
+/* in-place modulo, 1st arg is dst, 2nd is src */
+void bksmt_int_mods(struct bksmt_int *, struct bksmt_int *);
+
+/* in-place modular multiplication, i1=(i1*i2)%i3 */
+void bksmt_int_modmuls(struct bksmt_int *, struct bksmt_int *, struct bksmt_int *);
+
 /* get an array of numbers representing int with a sign int */
 void bksmt_int_lst_rep(struct bksmt_int *, uint64_t **, size_t *, int *);
-
-/* performs the following operation: #1 += #2 */
-void bksmt_int_adds(struct bksmt_int *, struct bksmt_int *);
 
 /* free function */
 void bksmt_int_free(struct bksmt_int *);
