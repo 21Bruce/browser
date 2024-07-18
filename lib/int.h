@@ -27,7 +27,7 @@ struct bksmt_int *bksmt_int_init_int(int64_t);
 /* dynamically initialize int with initial uint64 arr */
 struct bksmt_int *bksmt_int_init_lst(uint64_t *, size_t, int);
 
-/* dynamically initialize int with deep duplication of input bigint */
+/* dynamically initialize int with deep duplication of input int */
 struct bksmt_int *bksmt_int_dup(struct bksmt_int *);
 
 /* cmp two ints:

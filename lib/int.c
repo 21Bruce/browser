@@ -11,8 +11,10 @@ static void expand_num(struct bksmt_int *, size_t);
 static void shrink_num(struct bksmt_int *);
 /* add first's number array to second's number array interpreted as uints */
 static void adds_base(struct bksmt_int *, struct bksmt_int *);
-/* sub second's number array from first's number array interpreted as uints, w/proper sign flip */
+/* sub second's number array from first's number array interpreted as uints, assumes first is larger than second, store in first */
 static void subs_base(struct bksmt_int *, struct bksmt_int *);
+/* sub second's number array from first's number array interpreted as uints, assumes first is larger than second, store in second */
+static void subss_base(struct bksmt_int *, struct bksmt_int *);
 
 struct bksmt_int *
 bksmt_int_init_int(int64_t num)
@@ -117,12 +119,24 @@ bksmt_int_cmp(struct bksmt_int *i1, struct bksmt_int *i2)
 void
 bksmt_int_adds(struct bksmt_int *i1, struct bksmt_int *i2)
 {
-    if (i1->sign == i2->sign) 
+    int ssign1, ssign2;
+    if (i1->sign == i2->sign)  {
         adds_base(i1, i2);
-    else if (i2->sign == -1) 
+        return;
+    }
+    ssign1 = i1->sign;
+    ssign2 = i2->sign;
+
+    /* equate signs so cmp will return largest mag */
+    i1->sign = i2->sign = 1;
+    if (bksmt_int_cmp(i1, i2) >= 0) {
+        i1->sign = ssign1;
+        i2->sign = ssign2;
         subs_base(i1, i2);
-    else {
-        subs_base(i1, i2);
+    } else {  
+        i1->sign = ssign1;
+        i2->sign = ssign2;
+        subss_base(i2, i1);
         i1->sign *= -1;
     }
 }
@@ -197,10 +211,81 @@ adds_base(struct bksmt_int *i1, struct bksmt_int *i2)
 
 }
 
+/* assumes |i1| >= |i2| */
 static void 
 subs_base(struct bksmt_int *i1, struct bksmt_int *i2)
 {
+    uint64_t carry, storage1, storage2;
+    int i;
+
+    carry = 0;
+    for(i = 0; i < i1->size; i++) {
+        /* sub i2 num from i1 num, checking if i2 is vitually 0 */
+        storage1 = i1->num[i] - carry;
+        /* check for carry overflow */
+        if (storage1 > i1->num[i]) {
+            carry = 1;
+            storage1 = BKSMT_INT_SL_MAX;
+        } else {
+            carry = 0;
+        }
+
+        /* sub i2 num */
+        storage2 = storage1 - ((i >= i2->size) ? 0 : i2->num[i]);
+        /* check for carry overflow */
+        if (storage2 > i1->num[i]) {
+            carry = 1;
+            storage2 = BKSMT_INT_SL_MAX - ((i >= i2->size) ? 0 : i2->num[i]);
+            storage2 += 1;
+            storage2 += storage1;
+        }
+        /* set i1 num to the sum */
+        i1->num[i] = storage2;
+    }
+
+    shrink_num(i1);
+
 }
+
+/* assumes |i1| >= |i2| */
+static void 
+subss_base(struct bksmt_int *i1, struct bksmt_int *i2)
+{
+    uint64_t carry, storage1, storage2;
+    int i;
+
+    if (i2->size < i1->size)
+        expand_num(i2, i1->size);
+
+    carry = 0;
+    for(i = 0; i < i1->size; i++) {
+        /* sub i2 num from i1 num, checking if i2 is vitually 0 */
+        storage1 = i1->num[i] - carry;
+        /* check for carry overflow */
+        if (storage1 > i1->num[i]) {
+            carry = 1;
+            storage1 = BKSMT_INT_SL_MAX;
+        } else {
+            carry = 0;
+        }
+
+        /* sub i2 num */
+        storage2 = storage1 - i2->num[i];
+        /* check for carry overflow */
+        if (storage2 > i1->num[i]) {
+            carry = 1;
+            storage2 = BKSMT_INT_SL_MAX - ((i >= i2->size) ? 0 : i2->num[i]);
+            storage2 += 1;
+            storage2 += storage1;
+        }
+        /* set i2 num to the sum */
+        i2->num[i] = storage2;
+    }
+
+    shrink_num(i2);
+
+}
+
 
 void 
 bksmt_int_free(struct bksmt_int *i1)
