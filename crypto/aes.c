@@ -5,24 +5,24 @@
 
 
 /* FIPS-197 Section 4.2 */
-static unsigned char bksmt_bin_pmult(unsigned char, unsigned char);
+static unsigned char bin_pmult(unsigned char, unsigned char);
 
 /* FIPS-197 Section 4.3 */
-static void bksmt_byte_pmmult(unsigned char[4], unsigned char[4], unsigned char[4]);
+static void byte_pmmult(unsigned char[4], unsigned char[4], unsigned char[4]);
 
 /* 
  * takes an input stream of 16 bytes and converts to a state
  * with the convention s[r,c] = i[r + 4c] 
  */
-static void bksmt_aes_in(unsigned char [16], unsigned char [16]);
+static void aes_in(unsigned char [16], unsigned char [16]);
 
 /* 
  * takes a state and converts to an output stream of 16
  * bytes with the convention s[r,c] = o[r + 4c] 
  */
-static void bksmt_aes_out(unsigned char [16], unsigned char [16]);
+static void aes_out(unsigned char [16], unsigned char [16]);
 
-static void bksmt_aes_kexp(unsigned char *, unsigned char *, int);
+static void aes_kexp(unsigned char *, unsigned char *, int);
 
 static void rotword(unsigned char [4]);
 
@@ -31,24 +31,21 @@ static void subword(unsigned char [4]);
 static unsigned char xtimes(unsigned char);
 
 /* each op is in-place */
-static void bksmt_aes_subbytes(unsigned char[16]);
+static void aes_subbytes(unsigned char[16]);
 
-static void bksmt_aes_shiftrows(unsigned char[16]);
+static void aes_shiftrows(unsigned char[16]);
 
-static void bksmt_aes_mixcols(unsigned char[16]);
+static void aes_mixcols(unsigned char[16]);
 
-static void bksmt_aes_addroundkey(unsigned char[16], unsigned char[16]);
+static void aes_addroundkey(unsigned char[16], unsigned char[16]);
 
-static void bksmt_aes_inv_subbytes(unsigned char[16]);
+static void aes_inv_subbytes(unsigned char[16]);
 
-static void bksmt_aes_inv_shiftrows(unsigned char[16]);
+static void aes_inv_shiftrows(unsigned char[16]);
 
-static void bksmt_aes_inv_mixcols(unsigned char[16]);
+static void aes_inv_mixcols(unsigned char[16]);
 
-static void bksmt_aes_addroundkey(unsigned char[16], unsigned char[16]);
-
-
-
+static void aes_addroundkey(unsigned char[16], unsigned char[16]);
 
 void 
 bksmt_aes_128(unsigned char in[16], unsigned char key[16], unsigned char out[16])
@@ -57,31 +54,31 @@ bksmt_aes_128(unsigned char in[16], unsigned char key[16], unsigned char out[16]
     int round, i, j;
 
     /* parse input stream into state table */
-    bksmt_aes_in(in, state);
+    aes_in(in, state);
 
     /* expand key */
-    bksmt_aes_kexp(key, sched, 4);
+    aes_kexp(key, sched, 4);
 
     /* add first round key */
-    bksmt_aes_addroundkey(state, sched);
+    aes_addroundkey(state, sched);
 
     /* do rounds */
     for(round = 1; round < 10; round++) {
-        bksmt_aes_subbytes(state);
-        bksmt_aes_shiftrows(state);
-        bksmt_aes_mixcols(state);
-        bksmt_aes_addroundkey(state, sched + round * 16);
+        aes_subbytes(state);
+        aes_shiftrows(state);
+        aes_mixcols(state);
+        aes_addroundkey(state, sched + round * 16);
     }
 
     /* final round requires special handling */
-    bksmt_aes_subbytes(state);
-    bksmt_aes_shiftrows(state);
+    aes_subbytes(state);
+    aes_shiftrows(state);
 
     /* add last roundkey word */
-    bksmt_aes_addroundkey(state, sched + 160);
+    aes_addroundkey(state, sched + 160);
 
     /* build output stream from state table */
-    bksmt_aes_out(state, out);
+    aes_out(state, out);
 }
 
 void 
@@ -91,31 +88,31 @@ bksmt_aes_inv_128(unsigned char in[16], unsigned char key[16], unsigned char out
     int round, i, j;
 
     /* parse input stream into state table */
-    bksmt_aes_in(in, state);
+    aes_in(in, state);
 
     /* expand key */
-    bksmt_aes_kexp(key, sched, 4);
+    aes_kexp(key, sched, 4);
 
     /* add first round key */
-    bksmt_aes_addroundkey(state, sched + 160);
+    aes_addroundkey(state, sched + 160);
 
     /* do rounds */
     for(round = 9; round > 0; round--) {
-        bksmt_aes_inv_shiftrows(state);
-        bksmt_aes_inv_subbytes(state);
-        bksmt_aes_addroundkey(state, sched + round * 16);
-        bksmt_aes_inv_mixcols(state);
+        aes_inv_shiftrows(state);
+        aes_inv_subbytes(state);
+        aes_addroundkey(state, sched + round * 16);
+        aes_inv_mixcols(state);
     }
 
     /* final round requires special handling */
-    bksmt_aes_inv_shiftrows(state);
-    bksmt_aes_inv_subbytes(state);
+    aes_inv_shiftrows(state);
+    aes_inv_subbytes(state);
 
     /* add last roundkey word */
-    bksmt_aes_addroundkey(state, sched);
+    aes_addroundkey(state, sched);
 
     /* build output stream from state table */
-    bksmt_aes_out(state, out);
+    aes_out(state, out);
 }
 
 void 
@@ -125,31 +122,31 @@ bksmt_aes_192(unsigned char in[16], unsigned char key[24], unsigned char out[16]
     int round, i, j;
 
     /* parse input stream into state table */
-    bksmt_aes_in(in, state);
+    aes_in(in, state);
 
     /* expand key */
-    bksmt_aes_kexp(key, sched, 6);
+    aes_kexp(key, sched, 6);
 
     /* add first round key */
-    bksmt_aes_addroundkey(state, sched);
+    aes_addroundkey(state, sched);
 
     /* do rounds */
     for(round = 1; round < 12; round++) {
-        bksmt_aes_subbytes(state);
-        bksmt_aes_shiftrows(state);
-        bksmt_aes_mixcols(state);
-        bksmt_aes_addroundkey(state, sched + round * 16);
+        aes_subbytes(state);
+        aes_shiftrows(state);
+        aes_mixcols(state);
+        aes_addroundkey(state, sched + round * 16);
     }
 
     /* final round requires special handling */
-    bksmt_aes_subbytes(state);
-    bksmt_aes_shiftrows(state);
+    aes_subbytes(state);
+    aes_shiftrows(state);
 
     /* add last roundkey word */
-    bksmt_aes_addroundkey(state, sched + 192);
+    aes_addroundkey(state, sched + 192);
 
     /* build output stream from state table */
-    bksmt_aes_out(state, out);
+    aes_out(state, out);
 }
 
 void 
@@ -159,31 +156,31 @@ bksmt_aes_inv_192(unsigned char in[16], unsigned char key[24], unsigned char out
     int round, i, j;
 
     /* parse input stream into state table */
-    bksmt_aes_in(in, state);
+    aes_in(in, state);
 
     /* expand key */
-    bksmt_aes_kexp(key, sched, 6);
+    aes_kexp(key, sched, 6);
 
     /* add first round key */
-    bksmt_aes_addroundkey(state, sched + 192);
+    aes_addroundkey(state, sched + 192);
 
     /* do rounds */
     for(round = 11; round > 0; round--) {
-        bksmt_aes_inv_shiftrows(state);
-        bksmt_aes_inv_subbytes(state);
-        bksmt_aes_addroundkey(state, sched + round * 16);
-        bksmt_aes_inv_mixcols(state);
+        aes_inv_shiftrows(state);
+        aes_inv_subbytes(state);
+        aes_addroundkey(state, sched + round * 16);
+        aes_inv_mixcols(state);
     }
 
     /* final round requires special handling */
-    bksmt_aes_inv_shiftrows(state);
-    bksmt_aes_inv_subbytes(state);
+    aes_inv_shiftrows(state);
+    aes_inv_subbytes(state);
 
     /* add last roundkey word */
-    bksmt_aes_addroundkey(state, sched);
+    aes_addroundkey(state, sched);
 
     /* build output stream from state table */
-    bksmt_aes_out(state, out);
+    aes_out(state, out);
 }
 
 void 
@@ -193,31 +190,31 @@ bksmt_aes_256(unsigned char in[16], unsigned char key[32], unsigned char out[16]
     int round, i, j;
 
     /* parse input stream into state table */
-    bksmt_aes_in(in, state);
+    aes_in(in, state);
 
     /* expand key */
-    bksmt_aes_kexp(key, sched, 8);
+    aes_kexp(key, sched, 8);
 
     /* add first round key */
-    bksmt_aes_addroundkey(state, sched);
+    aes_addroundkey(state, sched);
 
     /* do rounds */
     for(round = 1; round < 14; round++) {
-        bksmt_aes_subbytes(state);
-        bksmt_aes_shiftrows(state);
-        bksmt_aes_mixcols(state);
-        bksmt_aes_addroundkey(state, sched + round * 16);
+        aes_subbytes(state);
+        aes_shiftrows(state);
+        aes_mixcols(state);
+        aes_addroundkey(state, sched + round * 16);
     }
 
     /* final round requires special handling */
-    bksmt_aes_subbytes(state);
-    bksmt_aes_shiftrows(state);
+    aes_subbytes(state);
+    aes_shiftrows(state);
 
     /* add last roundkey word */
-    bksmt_aes_addroundkey(state, sched + 224);
+    aes_addroundkey(state, sched + 224);
 
     /* build output stream from state table */
-    bksmt_aes_out(state, out);
+    aes_out(state, out);
 }
 
 void 
@@ -227,37 +224,37 @@ bksmt_aes_inv_256(unsigned char in[16], unsigned char key[32], unsigned char out
     int round, i, j;
 
     /* parse input stream into state table */
-    bksmt_aes_in(in, state);
+    aes_in(in, state);
 
     /* expand key */
-    bksmt_aes_kexp(key, sched, 8);
+    aes_kexp(key, sched, 8);
 
     /* add first round key */
-    bksmt_aes_addroundkey(state, sched + 224);
+    aes_addroundkey(state, sched + 224);
 
     /* do rounds */
     for(round = 13; round > 0; round--) {
-        bksmt_aes_inv_shiftrows(state);
-        bksmt_aes_inv_subbytes(state);
-        bksmt_aes_addroundkey(state, sched + round * 16);
-        bksmt_aes_inv_mixcols(state);
+        aes_inv_shiftrows(state);
+        aes_inv_subbytes(state);
+        aes_addroundkey(state, sched + round * 16);
+        aes_inv_mixcols(state);
     }
 
     /* final round requires special handling */
-    bksmt_aes_inv_shiftrows(state);
-    bksmt_aes_inv_subbytes(state);
+    aes_inv_shiftrows(state);
+    aes_inv_subbytes(state);
 
     /* add last roundkey word */
-    bksmt_aes_addroundkey(state, sched);
+    aes_addroundkey(state, sched);
 
     /* build output stream from state table */
-    bksmt_aes_out(state, out);
+    aes_out(state, out);
 }
 
 
 
 static unsigned char 
-bksmt_bin_pmult(unsigned char p1, unsigned char p2)
+bin_pmult(unsigned char p1, unsigned char p2)
 {
     unsigned char basem[8];
     unsigned char ret;
@@ -296,7 +293,7 @@ xtimes(unsigned char p1)
 }
 
 static void
-bksmt_byte_pmmult(unsigned char p1[4], unsigned char p2[4], unsigned char pret[4]) 
+byte_pmmult(unsigned char p1[4], unsigned char p2[4], unsigned char pret[4]) 
 {
     int i;
 
@@ -305,16 +302,16 @@ bksmt_byte_pmmult(unsigned char p1[4], unsigned char p2[4], unsigned char pret[4
     bzero(pret, 4);
     /* FIPS-197 Section 4.3 Fig 4.12 */
     for (i = 0; i < 4; i++) {
-       pret[i] ^= bksmt_bin_pmult(p1[i % 4], p2[0]);
-       pret[i] ^= bksmt_bin_pmult(p1[(i+3) % 4], p2[1]); 
-       pret[i] ^= bksmt_bin_pmult(p1[(i+2) % 4], p2[2]);
-       pret[i] ^= bksmt_bin_pmult(p1[(i+1) % 4], p2[3]); 
+       pret[i] ^= bin_pmult(p1[i % 4], p2[0]);
+       pret[i] ^= bin_pmult(p1[(i+3) % 4], p2[1]); 
+       pret[i] ^= bin_pmult(p1[(i+2) % 4], p2[2]);
+       pret[i] ^= bin_pmult(p1[(i+1) % 4], p2[3]); 
     }
 }
 
 
 static void
-bksmt_aes_in(unsigned char in[16], unsigned char state[16])
+aes_in(unsigned char in[16], unsigned char state[16])
 {
     int i, j;
 
@@ -325,7 +322,7 @@ bksmt_aes_in(unsigned char in[16], unsigned char state[16])
 }
 
 static void
-bksmt_aes_out(unsigned char state[16], unsigned char out[16])
+aes_out(unsigned char state[16], unsigned char out[16])
 {
     int i, j;
 
@@ -338,7 +335,7 @@ bksmt_aes_out(unsigned char state[16], unsigned char out[16])
 
 /* nk = number of key words */
 static void
-bksmt_aes_kexp(unsigned char *key, unsigned char *sched, int nk)
+aes_kexp(unsigned char *key, unsigned char *sched, int nk)
 {
     unsigned char temp[4];
     int nr, i, j, ksize, ssize;
@@ -397,7 +394,7 @@ subword(unsigned char word[4])
 }
 
 static void
-bksmt_aes_subbytes(unsigned char state[16])
+aes_subbytes(unsigned char state[16])
 {
     int r, c, i, j;
 
@@ -410,7 +407,7 @@ bksmt_aes_subbytes(unsigned char state[16])
 }
 
 static void
-bksmt_aes_shiftrows(unsigned char state[16])
+aes_shiftrows(unsigned char state[16])
 {
     unsigned char tmp;
 
@@ -444,7 +441,7 @@ bksmt_aes_shiftrows(unsigned char state[16])
 }
 
 static void
-bksmt_aes_mixcols(unsigned char state[16])
+aes_mixcols(unsigned char state[16])
 {
     unsigned char pconst[4] = GF_POLY;
     unsigned char col[4], trans[4];
@@ -456,7 +453,7 @@ bksmt_aes_mixcols(unsigned char state[16])
             col[i] = state[4 * i + j];
 
         /* poly mult jth column by pconst and store in trans */
-        bksmt_byte_pmmult(col, pconst, trans);
+        byte_pmmult(col, pconst, trans);
 
         /* return transformed column to state */
         for (i = 0; i < 4; i++) 
@@ -466,7 +463,7 @@ bksmt_aes_mixcols(unsigned char state[16])
 }
 
 static void 
-bksmt_aes_inv_subbytes(unsigned char state[16])
+aes_inv_subbytes(unsigned char state[16])
 {
     int r, c, i, j;
 
@@ -479,7 +476,7 @@ bksmt_aes_inv_subbytes(unsigned char state[16])
 }
 
 static void 
-bksmt_aes_inv_shiftrows(unsigned char state[16])
+aes_inv_shiftrows(unsigned char state[16])
 {
     unsigned char temp;
 
@@ -507,7 +504,7 @@ bksmt_aes_inv_shiftrows(unsigned char state[16])
 }
 
 static void
-bksmt_aes_inv_mixcols(unsigned char state[16])
+aes_inv_mixcols(unsigned char state[16])
 {
     unsigned char pconst[4] = GF_INV_POLY;
     unsigned char col[4], trans[4];
@@ -519,7 +516,7 @@ bksmt_aes_inv_mixcols(unsigned char state[16])
             col[i] = state[4 * i + j];
 
         /* poly mult jth column by pconst and store in trans */
-        bksmt_byte_pmmult(col, pconst, trans);
+        byte_pmmult(col, pconst, trans);
 
         /* return transformed column to state */
         for (i = 0; i < 4; i++) 
@@ -530,7 +527,7 @@ bksmt_aes_inv_mixcols(unsigned char state[16])
 
 
 static void 
-bksmt_aes_addroundkey(unsigned char state[16], unsigned char roundkey[16])
+aes_addroundkey(unsigned char state[16], unsigned char roundkey[16])
 {
     unsigned char col[4], trans[4];
     int i, j;
