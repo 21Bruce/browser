@@ -1,14 +1,27 @@
 #include "sha.h"
 
-#include "sha_const.h"
-#include "sha_pad.h"
 #include "../lib/pack.h"
 #include "../lib/math.h"
+#include "../lib/xmalloc.h"
+
 
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+
+/* pad for SHA-{1,224,256}, length of output in bytes will be largest multiple of 64 closest to orig len */
+static unsigned char *bksmt_sha256_pad(unsigned char *, long);
+
+/* returns length of a padded stream given initial length*/
+static long bksmt_sha256_pad_len(long);
+
+/* pad for SHA-{384,512,512/224,512/256} length of output in bytes will be largest multiple of 128 closest to orig len */
+static unsigned char *bksmt_sha512_pad(unsigned char *, long);
+
+/* returns length of a padded stream given initial length*/
+static long bksmt_sha512_pad_len(long);
+
 
 static uint32_t sha1ft(int , uint32_t, uint32_t, uint32_t);
 
@@ -409,4 +422,104 @@ sha512w_gen(uint64_t ret[80], unsigned char *pmsg, int i)
         else
             ret[t] = (SIG5121(ret[t-2]) + ret[t-7] + SIG5120(ret[t-15]) + ret[t-16]);
     }
+}
+
+static unsigned char * 
+bksmt_sha256_pad(unsigned char *msg, long len)
+{
+    long blen;
+    int pblen, applen, i, mask;
+    unsigned char *ret;
+
+    /* length in bits */
+    blen = len * 8;
+
+    /* padding length in bits */
+    pblen = pmod((448 - blen - 1), 512);
+
+    /* appendix len in bytes */
+    applen = (pblen + 1 + 64)/8;
+
+    /* make a return msg of size len + appendix len */
+    ret = xzallocarray(len + applen, sizeof *ret);
+
+    /* make a return msg of size len + appendix len */
+    memcpy(ret, msg, len);
+
+    /* appended 1 */
+    ret[len] = 0x80; 
+
+    /* write binary rep of len to end */
+    for (i = 0; i < 8; i++) {
+        ret[len + applen - 1 - i] = blen >> (i * 8); 
+    }
+
+    return ret;
+}
+
+static long 
+bksmt_sha256_pad_len(long len)
+{
+    long blen, pblen, applen;
+
+    /* orig len in bits */
+    blen  = 8 * len;
+
+    /* padding length in bits */
+    pblen = pmod((448 - blen - 1), 512);
+
+    /* appendix len in bytes */
+    applen = (pblen + 1 + 64)/8;
+
+    return len + applen;
+}
+
+static unsigned char * 
+bksmt_sha512_pad(unsigned char *msg, long len) 
+{
+    long blen;
+    int pblen, applen, i, mask;
+    unsigned char *ret;
+
+    /* length in bits */
+    blen = len * 8;
+
+    /* padding length in bits */
+    pblen = pmod((896 - blen - 1), 1024);
+
+    /* appendix len in bytes */
+    applen = (pblen + 1 + 128)/8;
+
+    /* make a return msg of size len + appendix len */
+    ret = xzallocarray(len + applen, sizeof *ret);
+
+    /* make a return msg of size len + appendix len */
+    memcpy(ret, msg, len);
+
+    /* appended 1 */
+    ret[len] = 0x80; 
+
+    /* write binary rep of len to end */
+    for (i = 0; i < 8; i++) {
+        ret[len + applen - 1 - i] = blen >> (i * 8); 
+    }
+
+    return ret;
+}
+
+static long 
+bksmt_sha512_pad_len(long len)
+{
+    long blen, pblen, applen;
+
+    /* orig len in bits */
+    blen  = 8 * len;
+
+    /* padding length in bits */
+    pblen = pmod((896 - blen - 1), 1024);
+
+    /* appendix len in bytes */
+    applen = (pblen + 1 + 128)/8;
+
+    return len + applen;
 }
