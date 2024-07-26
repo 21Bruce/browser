@@ -54,23 +54,53 @@ print_blk_bin(uint64_t blk[2])
 void
 bksmt_gcm_aes_ae(unsigned char key[16], unsigned char iv[12], unsigned char *p, size_t plen, unsigned char *a, size_t alen, unsigned char *c, unsigned char *t, size_t tlen)
 { 
-    uint64_t x1[2], x2[2], x3[2];
+    uint64_t x1[2], x2[2], x3[2], x4[2];
     int i;
    
-    x1[1] = 0x0000000000000000; 
-    x1[0] = 3; 
+//    x1[1] = 0x7b5b546573745665; 
+//    x1[0] = 0x63746f725d53475d; 
+//
+//    x2[1] = 0x4869285368617929; 
+//    x2[0] = 0x5b477565726f6e5d; 
+//
+//    x4[1] = 0x040229a09a5ed12e;
+//    x4[0] = 0x7e4e10da323506d2;
 
-    x2[1] = 0x0000000000000000; 
-    x2[0] = 2; 
 
-    gcm_blkmul(x2, x1, x3);
+//    x1[1] = 0; 
+//    x1[0] = 2; 
+//
+//    x2[1] = 0; 
+//    x2[0] = 2; 
+//
+//    print_blk_bin(x1);
+//    fprintf(stderr, "\n");
+// 
+//    gcm_blkmul(x1, x2, x3);
+//
+//    print_blk_bin(x1);
+//    fprintf(stderr, "\n");
+//    print_blk_bin(x2);
+//    fprintf(stderr, "\n");
+//    print_blk_bin(x3);
+//    fprintf(stderr, "\n");
+
+
+    x1[1] = 0x123904823908a300; 
+    x1[0] = 0x32948290384ea311; 
+
+    x2[1] = 0x4000000000000000; 
+    x2[0] = 0; 
 
     print_blk_bin(x1);
     fprintf(stderr, "\n");
-    print_blk_bin(x2);
-    fprintf(stderr, "\n");
-    print_blk_bin(x3);
-    fprintf(stderr, "\n");
+    for(i = 0; i < 128; i++) {
+        gcm_blkmul(x1, x1, x1);
+   }
+        print_blk_bin(x1);
+        fprintf(stderr, "\n");
+ 
+
 
 } 
 
@@ -155,55 +185,55 @@ gcm_inc32(uint64_t blk[2])
 static void 
 gcm_blkmul(uint64_t x[2], uint64_t y[2], uint64_t z[2])
 {
-    uint64_t r[2], v[2]; 
+    uint64_t r[2], v[2], ztmp[2]; 
     int i, xi, v0;
 
     /* r const */
-//    r[0] = 0;
-//    r[1] = 0xE100000000000000;
 
-      r[0] = 0x78;
-      r[1] = 0;
-    
+    r[1] = 0xE100000000000000;
+    r[0] = 0; 
+
     /* set z to zero */
-    memset(z, 0, 2 * sizeof *z);
+    memset(ztmp, 0, 2 * sizeof *ztmp);
 
     /* set v to y */
     memcpy(v, y, 2 * sizeof *y);
     
+//    fprintf(stderr, "0b");
     for(i = 0; i < 128; i++) {
-        fprintf(stderr, "start z: ");
-        print_blk_bin(z);
-        fprintf(stderr, "\n");
-        fprintf(stderr, "start v: ");
-        print_blk_bin(v);
-        fprintf(stderr, "\n");
         /* get the ith bit of x */
         xi = blk_getb(x, 127-i); 
-        fprintf(stderr, "%dth bit of x: %d\n", i, xi);
         /* get the LSB of v */
         v0 = blk_getb(v, 0);
-        fprintf(stderr, "%dth bit of v: %d\n", 0, v0);
         /* if xi == 1, spec says xor z = z ^ v*/
-        if (xi){
-            blk_xor(z, v);
-            fprintf(stderr, "z ^= v: ");
-            print_blk_bin(z);
-            fprintf(stderr, "\n");
-        }
+        if (xi) blk_xor(ztmp, v);
+//        fprintf(stderr, "\n");
+//        fprintf(stderr, "Pv: " );
+//        print_blk_bin(v);
         /* v =  v >> 1*/
         blk_rshift(v, 1);
-        fprintf(stderr, "v >>= 1: ");
-        print_blk_bin(v);
-        fprintf(stderr, "\n");
         /* if LSB(v) == 1, spec says v = v ^ r*/
-        if (v0) {
-            blk_xor(v, r);
-            fprintf(stderr, "v ^= r: ");
-            print_blk_bin(v);
-            fprintf(stderr, "\n");
-        }
+//        fprintf(stderr, "\n");
+//        fprintf(stderr, "Sv: " );
+//        print_blk_bin(v);
+//        fprintf(stderr, "\n");
+//        fprintf(stderr, "Sr: " );
+//        print_blk_bin(r);
+//        fprintf(stderr, "\n");
+        if (v0) blk_xor(v, r);
+//        fprintf(stderr, "\n");
+//        fprintf(stderr, "Av: " );
+//        print_blk_bin(v);
+//        fprintf(stderr, "\n");
+//        fprintf(stderr, "Ar: " );
+//        print_blk_bin(r);
+//        fprintf(stderr, "\n");
+//        fprintf(stderr, "\n");
+ 
     }
+    memcpy(z, ztmp, 2 * sizeof *z);
+    
+//    fprintf(stderr, "\n");
 
 }
 
