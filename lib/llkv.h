@@ -13,13 +13,14 @@
 
 #include "dictcase.h"
 #include "map.h"
+#include "void.h"
 
 BKSMT_MAP_TYPE(llkv, char, struct bksmt_dictcase)
 
 #define bksmt_llkv_init() \
-    bksmt_map_init(bksmt_map_eq, strcmp, bksmt_map_cpy, xstrdup, djb2_hash, bksmt_map_free, free, bksmt_dictcase_vinit, 0)
+    bksmt_map_init(bksmt_void_map_eq, bksmt_void_strcmp, bksmt_void_map_cpy, bksmt_void_xstrdup, bksmt_void_djb2_hash, bksmt_void_map_free, free, bksmt_dictcase_vinit, 0)
 
-struct bksmt_llkv *bksmt_llkv_vinit(void);
+void *bksmt_llkv_vinit(void);
 
 #define bksmt_llkv_get(lv, key, flag) \
     bksmt_map_get((struct bksmt_map *)(lv), (void *)(key), flag)

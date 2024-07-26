@@ -1,6 +1,6 @@
 #include "dictcase.h"
 
-struct bksmt_dictcase *
+void *
 bksmt_dictcase_vinit(void)
 {
     return bksmt_dictcase_init();

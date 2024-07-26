@@ -6,15 +6,16 @@
 #include <string.h>
 
 #include "map.h"
+#include "void.h"
 #include "xstring.h"
 #include "hash.h"
 
 BKSMT_MAP_TYPE(dict, char, char)
 
-#define bksmt_dict_init() \
-    bksmt_map_init(strcmp, strcmp, xstrdup, xstrdup, djb2_hash, free, free, NULL, 1)
+void *bksmt_dict_vinit(void);
 
-struct bksmt_dict *bksmt_dict_vinit(void);
+#define bksmt_dict_init() \
+    bksmt_map_init(bksmt_void_strcmp, bksmt_void_strcmp, bksmt_void_xstrdup, bksmt_void_xstrdup, bksmt_void_djb2_hash, free, free, NULL, 1)
 
 #define bksmt_dict_get(dict, key) \
     bksmt_map_get((struct bksmt_map *)(dict), (void *)(key), 0)

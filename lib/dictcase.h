@@ -10,14 +10,15 @@
 #include <sys/queue.h>
 
 #include "dict.h"
+#include "void.h"
 #include "map.h"
 
 BKSMT_MAP_TYPE(dictcase, char, struct bksmt_dict)
 
 #define bksmt_dictcase_init() \
-    bksmt_map_init(bksmt_map_eq, strcmp, bksmt_map_cpy, xstrdup, djb2_hash, bksmt_map_free, free, bksmt_dict_vinit, 0)
+    bksmt_map_init(bksmt_void_map_eq, bksmt_void_strcmp, bksmt_void_map_cpy, bksmt_void_xstrdup, bksmt_void_djb2_hash, bksmt_void_map_free, free, bksmt_dict_vinit, 0)
 
-struct bksmt_dictcase *bksmt_dictcase_vinit(void);
+void *bksmt_dictcase_vinit(void);
 
 #define bksmt_dictcase_get(dc, key, flag) \
     bksmt_map_get((struct bksmt_map *)(dc), (void *)(key), flag)

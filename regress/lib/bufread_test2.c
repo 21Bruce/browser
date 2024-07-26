@@ -10,8 +10,12 @@
 static int pos;
 
 int
-bufread(unsigned char *buf, unsigned char *out, int *size)
+bufread(void *vbuf, unsigned char *out, int *size)
 {
+    unsigned char *buf;
+
+    buf = (unsigned char *)vbuf;
+
     if (pos == BSIZE) {
         *size = 0;
         return BKSMT_BUFREAD_EOF;

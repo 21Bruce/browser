@@ -9,7 +9,7 @@
 #include "xmalloc.h"
 
 static void flush_buf(struct bksmt_bufread *, int, unsigned char *);
-static void fill_buf(struct bksmt_bufread *);
+static void *fill_buf(void *);
 static void print_debug_info(struct bksmt_bufread *);
 
 struct bksmt_bufread *
@@ -42,10 +42,13 @@ fail:
     return NULL;
 }
 
-static void 
-fill_buf(struct bksmt_bufread *br)
+static void *
+fill_buf(void *vbr)
 {
     int stat, esize, endpos;
+    struct bksmt_bufread *br;
+
+    br = (struct bksmt_bufread *)vbr;
 
     while(1) {
         pthread_mutex_lock(br->buflock);
@@ -75,6 +78,9 @@ fill_buf(struct bksmt_bufread *br)
         br->size += esize;
         pthread_mutex_unlock(br->buflock);
     }
+
+    /* NOT REACHED */
+    pthread_exit(0);
 }
 
 int 
