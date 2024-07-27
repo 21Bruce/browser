@@ -5,19 +5,21 @@
 #include <stdint.h>
 #include <string.h>
 
+#define ROTL(x,n) (((x) << (n)) | ((x) >> (((sizeof (x)) * 8) - (n))))
+
 /* 
  * inputs: key, nonce, block #
  * outputs: ciphertext buffer 
  */
-static void bksmt_chacha20_blk(unsigned char [32], unsigned char [12], uint32_t, unsigned char [64]);
+static void chacha20_blk(unsigned char [32], unsigned char [12], uint32_t, unsigned char [64]);
 
 static void chacha20_round(uint32_t [16]);
 
-static void bksmt_chacha20_blk_qround(uint32_t *, uint32_t *, uint32_t *, uint32_t *);
+static void chacha20_blk_qround(uint32_t *, uint32_t *, uint32_t *, uint32_t *);
 
-static void bksmt_chacha20_blk_in(unsigned char [32], unsigned char [12], uint32_t, uint32_t [16]);
+static void chacha20_blk_in(unsigned char [32], unsigned char [12], uint32_t, uint32_t [16]);
 
-static void bksmt_chacha20_blk_out(uint32_t [16], unsigned char [64]);
+static void chacha20_blk_out(uint32_t [16], unsigned char [64]);
 
 void 
 bksmt_chacha20(unsigned char key[32], unsigned char nonce[12], uint32_t counter, unsigned char *in, int len, unsigned char *out)
@@ -30,7 +32,7 @@ bksmt_chacha20(unsigned char key[32], unsigned char nonce[12], uint32_t counter,
 
     for (i = 0; i < blklen; i++) {
         /* generate chacha20 block */ 
-        bksmt_chacha20_blk(key, nonce, counter + i, kblk); 
+        chacha20_blk(key, nonce, counter + i, kblk); 
         /* xor plaintext block with chacha20 block and store */
         for (j = 0; j < 64; j++)
             out[i * 64 + j] = in[i * 64 + j] ^ kblk[j];
@@ -39,7 +41,7 @@ bksmt_chacha20(unsigned char key[32], unsigned char nonce[12], uint32_t counter,
     /* special case if input is not multiple of blk size */ 
     if ((len % 64) != 0) {
         /* generate chacha20 block */ 
-        bksmt_chacha20_blk(key, nonce, counter + blklen, kblk); 
+        chacha20_blk(key, nonce, counter + blklen, kblk); 
         /* xor plaintext block with chacha20 block and store */
         for (j = 0; j < len % 64; j++)
             out[blklen * 64 + j] = in[blklen * 64 + j] ^ kblk[j];
@@ -50,13 +52,13 @@ bksmt_chacha20(unsigned char key[32], unsigned char nonce[12], uint32_t counter,
 
 /* RFC 8439 Sec 2.3.1 */
 static void 
-bksmt_chacha20_blk(unsigned char key[32], unsigned char nonce[12], uint32_t blockcount, unsigned char out[64])
+chacha20_blk(unsigned char key[32], unsigned char nonce[12], uint32_t blockcount, unsigned char out[64])
 {
     uint32_t state[16], statecp[16];
     int i;
 
     /* read inputs into state */
-    bksmt_chacha20_blk_in(key, nonce, blockcount, state);
+    chacha20_blk_in(key, nonce, blockcount, state);
 
     /* we need a copy of state for the end */
     memcpy(statecp, state, 64);
@@ -69,25 +71,25 @@ bksmt_chacha20_blk(unsigned char key[32], unsigned char nonce[12], uint32_t bloc
     for(i = 0; i < 16; i++)
         state[i] += statecp[i];
 
-    bksmt_chacha20_blk_out(state, out);
+    chacha20_blk_out(state, out);
 }
 
 /* RFC 8439 Sec 2.3.1 */
 static void
 chacha20_round(uint32_t state[16])
 {
-    bksmt_chacha20_blk_qround(state + 0, state + 4, state + 8, state + 12);
-    bksmt_chacha20_blk_qround(state + 1, state + 5, state + 9, state + 13);
-    bksmt_chacha20_blk_qround(state + 2, state + 6, state + 10, state + 14);
-    bksmt_chacha20_blk_qround(state + 3, state + 7, state + 11, state + 15);
-    bksmt_chacha20_blk_qround(state + 0, state + 5, state + 10, state + 15);
-    bksmt_chacha20_blk_qround(state + 1, state + 6, state + 11, state + 12);
-    bksmt_chacha20_blk_qround(state + 2, state + 7, state + 8, state + 13);
-    bksmt_chacha20_blk_qround(state + 3, state + 4, state + 9, state + 14);
+    chacha20_blk_qround(state + 0, state + 4, state + 8, state + 12);
+    chacha20_blk_qround(state + 1, state + 5, state + 9, state + 13);
+    chacha20_blk_qround(state + 2, state + 6, state + 10, state + 14);
+    chacha20_blk_qround(state + 3, state + 7, state + 11, state + 15);
+    chacha20_blk_qround(state + 0, state + 5, state + 10, state + 15);
+    chacha20_blk_qround(state + 1, state + 6, state + 11, state + 12);
+    chacha20_blk_qround(state + 2, state + 7, state + 8, state + 13);
+    chacha20_blk_qround(state + 3, state + 4, state + 9, state + 14);
 }
 
 static void 
-bksmt_chacha20_blk_qround(uint32_t *a, uint32_t *b, uint32_t *c, uint32_t *d)
+chacha20_blk_qround(uint32_t *a, uint32_t *b, uint32_t *c, uint32_t *d)
 {
     *a += *b; *d ^= *a; *d = ROTL(*d, 16);
     *c += *d; *b ^= *c; *b = ROTL(*b, 12);
@@ -96,7 +98,7 @@ bksmt_chacha20_blk_qround(uint32_t *a, uint32_t *b, uint32_t *c, uint32_t *d)
 }
 
 static void 
-bksmt_chacha20_blk_in(unsigned char key[32], unsigned char nonce[12], uint32_t blockcount, uint32_t state[16]) 
+chacha20_blk_in(unsigned char key[32], unsigned char nonce[12], uint32_t blockcount, uint32_t state[16]) 
 {
     int i;
 
@@ -119,7 +121,7 @@ bksmt_chacha20_blk_in(unsigned char key[32], unsigned char nonce[12], uint32_t b
 
 
 static void 
-bksmt_chacha20_blk_out(uint32_t state[16], unsigned char out[64])
+chacha20_blk_out(uint32_t state[16], unsigned char out[64])
 {
     int i;
     for (i = 0; i < 16; i++)

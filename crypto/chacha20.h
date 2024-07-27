@@ -3,7 +3,6 @@
 
 #include <stdint.h>
 
-#define ROTL(x,n) (((x) << (n)) | ((x) >> (((sizeof (x)) * 8) - (n))))
 
 /* 
  * inputs: key, nonce, block #, plaintext, plaintext len

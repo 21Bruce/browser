@@ -18,7 +18,7 @@ static void gcm_inc32(uint64_t [2]);
 static void gcm_blkmul(uint64_t [2], uint64_t [2], uint64_t [2]);
 
 /* NIST 800-38d 6.4 */
-static void gcm_aes_ghash(unsigned char [16], unsigned char *, size_t, uint64_t [16]);
+static void gcm_aes_ghash(uint64_t [2], uint64_t *, size_t, uint64_t [2]);
 
 /* NIST 800-38d 6.5 */
 static void gcm_aes_gctr(unsigned char [16], uint64_t [2], unsigned char *, size_t, unsigned char *);
@@ -57,34 +57,6 @@ bksmt_gcm_aes_ae(unsigned char key[16], unsigned char iv[12], unsigned char *p, 
     uint64_t x1[2], x2[2], x3[2], x4[2];
     int i;
    
-//    x1[1] = 0x7b5b546573745665; 
-//    x1[0] = 0x63746f725d53475d; 
-//
-//    x2[1] = 0x4869285368617929; 
-//    x2[0] = 0x5b477565726f6e5d; 
-//
-//    x4[1] = 0x040229a09a5ed12e;
-//    x4[0] = 0x7e4e10da323506d2;
-
-
-//    x1[1] = 0; 
-//    x1[0] = 2; 
-//
-//    x2[1] = 0; 
-//    x2[0] = 2; 
-//
-//    print_blk_bin(x1);
-//    fprintf(stderr, "\n");
-// 
-//    gcm_blkmul(x1, x2, x3);
-//
-//    print_blk_bin(x1);
-//    fprintf(stderr, "\n");
-//    print_blk_bin(x2);
-//    fprintf(stderr, "\n");
-//    print_blk_bin(x3);
-//    fprintf(stderr, "\n");
-
 
     x1[1] = 0x123904823908a300; 
     x1[0] = 0x32948290384ea311; 
@@ -199,7 +171,6 @@ gcm_blkmul(uint64_t x[2], uint64_t y[2], uint64_t z[2])
     /* set v to y */
     memcpy(v, y, 2 * sizeof *y);
     
-//    fprintf(stderr, "0b");
     for(i = 0; i < 128; i++) {
         /* get the ith bit of x */
         xi = blk_getb(x, 127-i); 
@@ -207,57 +178,29 @@ gcm_blkmul(uint64_t x[2], uint64_t y[2], uint64_t z[2])
         v0 = blk_getb(v, 0);
         /* if xi == 1, spec says xor z = z ^ v*/
         if (xi) blk_xor(ztmp, v);
-//        fprintf(stderr, "\n");
-//        fprintf(stderr, "Pv: " );
-//        print_blk_bin(v);
         /* v =  v >> 1*/
         blk_rshift(v, 1);
         /* if LSB(v) == 1, spec says v = v ^ r*/
-//        fprintf(stderr, "\n");
-//        fprintf(stderr, "Sv: " );
-//        print_blk_bin(v);
-//        fprintf(stderr, "\n");
-//        fprintf(stderr, "Sr: " );
-//        print_blk_bin(r);
-//        fprintf(stderr, "\n");
         if (v0) blk_xor(v, r);
-//        fprintf(stderr, "\n");
-//        fprintf(stderr, "Av: " );
-//        print_blk_bin(v);
-//        fprintf(stderr, "\n");
-//        fprintf(stderr, "Ar: " );
-//        print_blk_bin(r);
-//        fprintf(stderr, "\n");
-//        fprintf(stderr, "\n");
- 
     }
     memcpy(z, ztmp, 2 * sizeof *z);
     
-//    fprintf(stderr, "\n");
-
 }
 
-//static void
-//gcm_aes_ghash(unsigned char key[16], uint64_t *msg, size_t msglen, uint64_t out[2])
-//{
-//    size_t i;
-//    unsigned char zero[16], hsubkb[16];
-//    uint64_t hsubk[2], xi[2];
-//
-//    /* generate hash subkey */
-//    memset(zero, 0, 16 * sizeof *zero);
-//    bksmt_aes_128(zero, key, hsubkb);
-//    bytetoblk(hsubk, hsubkb);
-//
-//    /* zero out */
-//    out[0] = 0;
-//    out[1] = 0;
-//
-//    for(i = 0; i < msglen/2; i++) {
-//        blk_xor(out, xi + i*2); 
-//        gcm_blkmul(out, hsubk, out); 
-//    }
-//}
+static void
+gcm_aes_ghash(uint64_t hsubkey[2], uint64_t *msg, size_t msglen, uint64_t out[2])
+{
+    size_t i;
+
+    /* zero out */
+    out[0] = 0;
+    out[1] = 0;
+
+    for(i = 0; i < msglen/2; i++) {
+        blk_xor(out, msg + i*2); 
+        gcm_blkmul(out, hsubkey, out); 
+    }
+}
 
 
 static void 
