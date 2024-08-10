@@ -39,19 +39,35 @@ struct bksmt_int *bksmt_int_dup(struct bksmt_int *);
  */ 
 int bksmt_int_cmp(struct bksmt_int *, struct bksmt_int *);
 
+/* right shift an int, dynamically generated result */ 
+struct bksmt_int *bksmt_int_rshift(struct bksmt_int *, uint64_t);
+
+/* left shift an int, dynamically generated result */ 
+struct bksmt_int *bksmt_int_lshift(struct bksmt_int *, uint64_t);
+
 /* add two ints, dynamically generated result */ 
 struct bksmt_int *bksmt_int_add(struct bksmt_int *, struct bksmt_int *);
 
 /* sub two ints, dynamically generated result */ 
 struct bksmt_int *bksmt_int_sub(struct bksmt_int *, struct bksmt_int *);
 
+/* mul two ints, dynamically generated result */ 
 struct bksmt_int *bksmt_int_mul(struct bksmt_int *, struct bksmt_int *);
 
+/* div two ints, dynamically generated result */ 
 struct bksmt_int *bksmt_int_div(struct bksmt_int *, struct bksmt_int *);
 
+/* mod two ints, dynamically generated result */ 
 struct bksmt_int *bksmt_int_mod(struct bksmt_int *, struct bksmt_int *);
 
+/* mul first two ints mod third, dynamically generated result */ 
 struct bksmt_int *bksmt_int_modmul(struct bksmt_int *, struct bksmt_int *, struct bksmt_int *);
+
+/* right shift an int, dynamically generated result */ 
+void bksmt_int_rshifts(struct bksmt_int *, uint64_t);
+
+/* left shift an int, dynamically generated result */ 
+void bksmt_int_lshifts(struct bksmt_int *, uint64_t);
 
 /* in-place addition, 1st arg is dst, 2nd is src */
 void bksmt_int_adds(struct bksmt_int *, struct bksmt_int *);

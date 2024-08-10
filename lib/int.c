@@ -1,9 +1,13 @@
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 #include <stdio.h>
 
 #include "xmalloc.h"
 #include "int.h"
+
+/* set the number to the zero representation */
+static void zero_num(struct bksmt_int *);
 
 /* expand the int's internal array to size w/leading zeroes */
 static void expand_num(struct bksmt_int *, size_t);
@@ -19,6 +23,9 @@ static void subs_base(struct bksmt_int *, struct bksmt_int *);
 
 /* sub second's number array from first's number array interpreted as uints, assumes first is larger than second, store in second */
 static void subss_base(struct bksmt_int *, struct bksmt_int *);
+
+/* karatsuba multiply first base and second base arrays, store in first */
+static void ks_muls_base(struct bksmt_int *, struct bksmt_int *);
 
 struct bksmt_int *
 bksmt_int_init_int(int64_t num)
@@ -86,8 +93,6 @@ bksmt_int_cmp(struct bksmt_int *i1, struct bksmt_int *i2)
     /* if i2 is pos and i1 neg, then return -1 */
     if (i2->sign > i1->sign)
         return -1;
-
-
 
     /* if we reach here, i1->sign == i2->sign */
 
@@ -175,6 +180,7 @@ bksmt_int_subs(struct bksmt_int *i1, struct bksmt_int *i2)
     /* set i2 sign back */
     i2->sign *= -1;
 }
+
 
 
 static void 
@@ -321,6 +327,82 @@ subss_base(struct bksmt_int *i1, struct bksmt_int *i2)
 
 }
 
+void 
+bksmt_int_muls(struct bksmt_int *i1, struct bksmt_int *i2)
+{
+    size_t perms;
+
+    /* resulting sign is based on indiv signs */
+    i1->sign *= i2->sign;
+
+    /* # of single digit perms to execute */
+    perms = i1->size * i2->size;
+
+}
+
+static void 
+ks_muls_base(struct bksmt_int *i1, struct bksmt_int *i2) 
+{
+}
+
+void 
+bksmt_int_rshifts(struct bksmt_int *i1, uint64_t shift)
+{
+    uint64_t shbase, shrem, sto1, sto2, mask, psize;
+    int64_t i;
+
+    if (shift == 0)
+        return;
+
+    if (shift >= i1->size * 64) {
+        zero_num(i1); 
+        return;
+    }
+
+    /* previous size save */
+    psize = i1->size;
+
+    /* how many base widths are we shifting, these can be done quickly using memcpy */
+    shbase = shift / 64;
+    /* how much remains after the full base shifts, these require special treatment */
+    shrem = shift % 64;
+
+    /* move shbase slots to the front */
+    if (shbase != 0) {
+        memcpy(i1->num, i1->num + shbase, i1->size - shbase);
+        i1->size -= shbase;
+    }
+
+
+    /* handle remaining shifts */
+    sto1 = 0;
+    mask = BKSMT_INT_SL_MAX >> (64 - shrem);
+    for (i = i1->size - 1; i >= 0; i--) {
+        sto2 = sto1;
+        sto1 = i1->num[i] & mask;
+        i1->num[i] >>= shrem;
+        i1->num[i] |= sto2 << (64 - shrem); 
+    }
+    
+    i1->size = i1->num[i1->size - 1] == 0 ? i1->size - 1: i1->size;
+
+    i1->num = xrealloc(i1->num, psize * sizeof(i1->num[0]) , i1->size * sizeof(i1->num[0]));
+}
+
+static void 
+lshifts_base(struct bksmt_int *i1, uint64_t shift)
+{
+
+}
+
+static void 
+zero_num(struct bksmt_int *i1)
+{
+    free(i1->num);
+    i1->num = xzalloc(sizeof *(i1->num));
+    i1->size = 0;
+    i1->sign = 1;
+}
 
 void 
 bksmt_int_free(struct bksmt_int *i1)
