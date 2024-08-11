@@ -23,12 +23,12 @@ main(void)
 
 
 
-    i1 = bksmt_int_init_lst(num1, 2, 1);
-    i2 = bksmt_int_init_lst(num2, 2, 1);
+    i1 = bksmt_int_init_lst(num1, 2, BKSMT_INT_POS);
+    i2 = bksmt_int_init_lst(num2, 2, BKSMT_INT_POS);
     bksmt_int_adds(i1, i2);    
     bksmt_int_lst_rep(i1, &num3, &size, &sign);
 
-    if (sign != 1)
+    if (sign != BKSMT_INT_POS)
         return 1;
 
     if (size != 2)
@@ -41,12 +41,12 @@ main(void)
     bksmt_int_free(i2);
     free(num3);
 
-    i1 = bksmt_int_init_lst(num11, 3, 1);
-    i2 = bksmt_int_init_lst(num22, 2, 1);
+    i1 = bksmt_int_init_lst(num11, 3, BKSMT_INT_POS);
+    i2 = bksmt_int_init_lst(num22, 2, BKSMT_INT_POS);
     bksmt_int_adds(i1, i2);    
     bksmt_int_lst_rep(i1, &num3, &size, &sign);
 
-    if (sign != 1)
+    if (sign != BKSMT_INT_POS)
         return 4;
 
     if (size != 3)
@@ -59,12 +59,12 @@ main(void)
     bksmt_int_free(i2);
     free(num3);
 
-    i1 = bksmt_int_init_lst(num11, 3, 1);
-    i2 = bksmt_int_init_lst(num22, 2, 1);
+    i1 = bksmt_int_init_lst(num11, 3, BKSMT_INT_POS);
+    i2 = bksmt_int_init_lst(num22, 2, BKSMT_INT_POS);
     bksmt_int_adds(i2, i1);    
     bksmt_int_lst_rep(i2, &num3, &size, &sign);
 
-    if (sign != 1)
+    if (sign != BKSMT_INT_POS)
         return 7;
 
     if (size != 3)
@@ -77,12 +77,12 @@ main(void)
     bksmt_int_free(i2);
     free(num3);
 
-    i1 = bksmt_int_init_lst(num111, 1, 1);
-    i2 = bksmt_int_init_lst(num222, 1, 1);
+    i1 = bksmt_int_init_lst(num111, 1, BKSMT_INT_POS);
+    i2 = bksmt_int_init_lst(num222, 1, BKSMT_INT_POS);
     bksmt_int_adds(i1, i2);    
     bksmt_int_lst_rep(i1, &num3, &size, &sign);
 
-    if (sign != 1)
+    if (sign != BKSMT_INT_POS)
         return 10;
 
     if (size != 2)
@@ -95,12 +95,12 @@ main(void)
     bksmt_int_free(i2);
     free(num3);
 
-    i1 = bksmt_int_init_lst(num222, 1, 1);
-    i2 = bksmt_int_init_lst(num111, 1, 1);
+    i1 = bksmt_int_init_lst(num222, 1, BKSMT_INT_POS);
+    i2 = bksmt_int_init_lst(num111, 1, BKSMT_INT_POS);
     bksmt_int_adds(i1, i2);    
     bksmt_int_lst_rep(i1, &num3, &size, &sign);
 
-    if (sign != 1)
+    if (sign != BKSMT_INT_POS)
         return 13;
 
     if (size != 2)
@@ -114,12 +114,12 @@ main(void)
     free(num3);
 
     
-    i1 = bksmt_int_init_lst(num2222, 1, 1);
-    i2 = bksmt_int_init_lst(num1111, 1, 1);
+    i1 = bksmt_int_init_lst(num2222, 1, BKSMT_INT_POS);
+    i2 = bksmt_int_init_lst(num1111, 1, BKSMT_INT_POS);
     bksmt_int_adds(i1, i2);    
     bksmt_int_lst_rep(i1, &num3, &size, &sign);
 
-    if (sign != 1)
+    if (sign != BKSMT_INT_POS)
         return 16;
 
     if (size != 2)

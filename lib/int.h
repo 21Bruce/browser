@@ -5,6 +5,9 @@
 #include <stdlib.h>
 
 #define BKSMT_INT_SL_MAX 18446744073709551615
+#define BKSMT_INT_SL_BIT_MAX 64 
+#define BKSMT_INT_POS 1
+#define BKSMT_INT_NEG -1
 
 /* unbounded int arithmetic functions interface */
 

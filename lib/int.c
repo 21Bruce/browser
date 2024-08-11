@@ -37,7 +37,7 @@ bksmt_int_init_int(int64_t num)
     ret->num = xmalloc(sizeof *(ret->num));
     ret->size = 1;
 
-    ret->sign = num < 0 ? -1 : 1;
+    ret->sign = num < 0 ? BKSMT_INT_NEG : BKSMT_INT_POS;
     ret->num[0] = num * ret->sign;
 
     return ret;
@@ -363,48 +363,94 @@ bksmt_int_rshifts(struct bksmt_int *i1, uint64_t shift)
     psize = i1->size;
 
     /* how many base widths are we shifting, these can be done quickly using memcpy */
-    shbase = shift / 64;
+    shbase = shift / BKSMT_INT_SL_BIT_MAX;
     /* how much remains after the full base shifts, these require special treatment */
-    shrem = shift % 64;
+    shrem = shift % BKSMT_INT_SL_BIT_MAX;
 
     /* move shbase slots to the front */
-    if (shbase != 0) {
+    if (shbase > 0) {
         memcpy(i1->num, i1->num + shbase, i1->size - shbase);
         i1->size -= shbase;
     }
 
-
-    /* handle remaining shifts */
-    sto1 = 0;
-    mask = BKSMT_INT_SL_MAX >> (64 - shrem);
-    for (i = i1->size - 1; i >= 0; i--) {
-        sto2 = sto1;
-        sto1 = i1->num[i] & mask;
-        i1->num[i] >>= shrem;
-        i1->num[i] |= sto2 << (64 - shrem); 
+    if (shrem > 0) {
+        /* handle remaining shifts */
+        sto1 = 0;
+        mask = BKSMT_INT_SL_MAX >> (BKSMT_INT_SL_BIT_MAX - shrem);
+        for (i = i1->size - 1; i >= 0; i--) {
+            sto2 = sto1;
+            sto1 = i1->num[i] & mask;
+            i1->num[i] >>= shrem;
+            i1->num[i] |= sto2 << (BKSMT_INT_SL_BIT_MAX - shrem); 
+        }
     }
     
+    /* calculate new size */
     i1->size = i1->num[i1->size - 1] == 0 ? i1->size - 1: i1->size;
 
+    /* reallocate to fit new size */
     i1->num = xrealloc(i1->num, psize * sizeof(i1->num[0]) , i1->size * sizeof(i1->num[0]));
 }
 
-static void 
-lshifts_base(struct bksmt_int *i1, uint64_t shift)
+void 
+bksmt_int_lshifts(struct bksmt_int *i1, uint64_t shift)
 {
+    uint64_t shbase, shrem, ext, psize, sto1, sto2, mask;
+    int64_t i;
 
+    if (shift == 0)
+        return;
+
+    /* how many base widths are we shifting, these can be done quickly using memcpy-like mechanisms */
+    shbase = shift / BKSMT_INT_SL_BIT_MAX;
+    /* how much remains after the full base shifts, these require special treatment */
+    shrem = shift % BKSMT_INT_SL_BIT_MAX; 
+
+    /* calculate # extra slots */
+    ext = shbase + (shrem > 0 ? 1 : 0);
+
+    /* store previous size */
+    psize = i1->size;
+
+    /* allocate space for extra slots */
+    expand_num(i1, i1->size + ext);
+
+    /* move whole slots */
+    if (shbase > 0) {
+        for (i = psize - 1; i >= 0; i--) 
+           i1->num[i + shbase] = i1->num[i];  
+        /* zero out the vacant lower slots */
+        bzero(i1->num, shbase * sizeof(i1->num[0])); 
+    }
+
+   
+    if (shrem > 0) {
+        /* handle remaining shifts */
+        sto1 = 0;
+        mask = BKSMT_INT_SL_MAX << (BKSMT_INT_SL_BIT_MAX - shrem);
+        for (i = shbase; i < i1->size; i++) {
+            sto2 = sto1;
+            sto1 = i1->num[i] & mask;
+            i1->num[i] <<= shrem;
+            i1->num[i] |= sto2 >> (BKSMT_INT_SL_BIT_MAX - shrem); 
+        }
+        
+    }
+
+
+    shrink_num(i1); 
 }
 
-static void 
+static void
 zero_num(struct bksmt_int *i1)
 {
-    free(i1->num);
-    i1->num = xzalloc(sizeof *(i1->num));
-    i1->size = 0;
-    i1->sign = 1;
+    i1->num = xrealloc(i1->num, i1->size * sizeof(i1->num[0]), sizeof(i1->num[0]));
+    i1->num[0] = 0;
+    i1->size = 1;
+    i1->sign = 0;
 }
 
-void 
+void
 bksmt_int_free(struct bksmt_int *i1)
 {
     free(i1->num);
