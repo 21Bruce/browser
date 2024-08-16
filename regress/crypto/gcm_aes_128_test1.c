@@ -7,7 +7,7 @@ int
 main()
 {
 
-    int i;
+    int i, stat;
     unsigned char key[16] = { 0xd4, 0x80, 0x42, 0x96, 0x66, 0xd4, 0x8b, 0x40, 0x06, 0x33, 0x92, 0x1c, 0x54, 0x07, 0xd1, 0xd1 };
     unsigned char iv[12] = { 0x33, 0x88, 0xc6, 0x76, 0xdc, 0x75, 0x4a, 0xcf, 0xa6, 0x6e, 0x17, 0x2a };
     unsigned char plaintext[0]; 
@@ -21,9 +21,15 @@ main()
     if (memcmp(tagch, tag, 16) != 0)
         return 1;
 
+    stat = bksmt_gcm_aes_128_ad(key, iv, ciphertext, 0, aad, 0, tag, BKSMT_GCM_T128, plaintext);
+
+    if (stat != BKSMT_GCM_AD_OK)
+        return 2;
+
     unsigned char key1[16] = { 0x38, 0x81, 0xe7, 0xbe, 0x1b, 0xb3, 0xbb, 0xca, 0xff, 0x20, 0xbd, 0xb7, 0x8e, 0x5d, 0x1b, 0x67 };
     unsigned char iv1[12] = { 0xdc, 0xf5, 0xb7, 0xae, 0x2d, 0x75, 0x52, 0xe2, 0x29, 0x7f, 0xcf, 0xa9 };
     unsigned char plaintext1[5] = { 0x0a, 0x27, 0x14, 0xaa, 0x7d }; 
+    unsigned char plaintext1ch[5]; 
     unsigned char aad1[5] = { 0xc6, 0x0c, 0x64, 0xbb, 0xf7 };  
     unsigned char ciphertext1[5]; 
     unsigned char ciphertext1ch[5] = { 0x56, 0x26, 0xf9, 0x6e, 0xcb }; 
@@ -34,15 +40,23 @@ main()
 
 
     if (memcmp(ciphertext1, ciphertext1ch, 5) != 0)
-        return 2;
-
-    if (memcmp(tag1ch, tag1, 16) != 0)
         return 3;
 
+    if (memcmp(tag1ch, tag1, 16) != 0)
+        return 4;
+
+    stat = bksmt_gcm_aes_128_ad(key1, iv1, ciphertext1, 5, aad1, 5, tag1, BKSMT_GCM_T128, plaintext1ch);
+
+    if (memcmp(plaintext1, plaintext1ch, 5) != 0)
+        return 5;
+
+    if (stat != BKSMT_GCM_AD_OK)
+        return 6;
 
     unsigned char key2[16] = { 0xcd, 0xbc, 0x90, 0xe6, 0x0a, 0xab, 0x79, 0x05, 0xbd, 0xff, 0xdf, 0xd8, 0xd1, 0x3c, 0x01, 0x38 };
     unsigned char iv2[12] = { 0x9d, 0x98, 0x71, 0x84, 0xc4, 0xb4, 0xe8, 0x73, 0xd4, 0x77, 0x49, 0x31 };
     unsigned char plaintext2[15] = { 0xcb, 0x75, 0xa0, 0xf9, 0x13, 0x4c, 0x57, 0x9b, 0xeb, 0xbd, 0x27, 0xfe, 0x4a, 0x30, 0x11 }; 
+    unsigned char plaintext2ch[15]; 
     unsigned char aad2[15] = { 0x7d, 0xc7, 0x9f, 0x38, 0xe1, 0xdf, 0x93, 0x83, 0xe5, 0xd3, 0xa1, 0x37, 0x8b, 0x56, 0xef };  
     unsigned char ciphertext2[15]; 
     unsigned char ciphertext2ch[15] = { 0xc6, 0xa8, 0x99, 0x75, 0x8b, 0x6c, 0x11, 0x20, 0x82, 0x41, 0x62, 0x7c, 0x8a, 0x00, 0x96 }; 
@@ -52,28 +66,28 @@ main()
     bksmt_gcm_aes_128_ae(key2, iv2, plaintext2, 15, aad2, 15, ciphertext2, tag2, BKSMT_GCM_T128);
 
     if (memcmp(ciphertext2, ciphertext2ch, 15) != 0) {
-        fprintf(stderr, "Ciphertext 2 FAIL\n"); 
-        fprintf(stderr, "Expected | Actual\n"); 
-        fprintf(stderr, "-----------------\n"); 
-        for(i = 0; i < 20; i++) {
-            fprintf(stderr, "0x%.02x     | 0x%.02x\n", ciphertext2ch[i], ciphertext2[i]);
-            fprintf(stderr, "-----------------\n"); 
-        }
-        return 4;
+        return 7;
     }
 
 
     if (memcmp(tag2ch, tag2, 16) != 0) {
-        for(i = 0; i < 16; i++)
-           fprintf(stderr, "%.02x | %.02x\n", tag2[i], tag2ch[i]); 
-        return 5;
+        return 8;
     }
+
+    stat = bksmt_gcm_aes_128_ad(key2, iv2, ciphertext2, 15, aad2, 15, tag2, BKSMT_GCM_T128, plaintext2ch);
+
+    if (memcmp(plaintext2, plaintext2ch, 15) != 0)
+        return 9;
+
+    if (stat != BKSMT_GCM_AD_OK)
+        return 10;
 
 
 
     unsigned char key3[16] = { 0x81, 0x9b, 0xc8, 0xd2, 0xf4, 0x19, 0x96, 0xba, 0xca, 0x69, 0x74, 0x41, 0xf9, 0x82, 0xad, 0x37 };
     unsigned char iv3[12] = { 0x08, 0xb7, 0xa1, 0x5f, 0x38, 0x8f, 0xaf, 0xb1, 0x67, 0x11, 0xce, 0x19 };
     unsigned char plaintext3[20] = { 0x9b, 0x1d, 0xdd, 0x17, 0x7d, 0x28, 0x42, 0xa7, 0x01, 0xb7, 0x94, 0x45, 0x0e, 0x3c, 0x81, 0xf1, 0x51, 0xf1, 0x95, 0xa1 }; 
+    unsigned char plaintext3ch[20]; 
     unsigned char aad3[20] = { 0x27, 0x7c, 0x37, 0x27, 0x84, 0x55, 0x97, 0x84, 0xb0, 0xe0, 0x47, 0xc6, 0xf8, 0xb7, 0xe9, 0xef, 0xb6, 0xf7, 0x49, 0x1e };  
     unsigned char ciphertext3[20]; 
     unsigned char ciphertext3ch[20] = { 0xde, 0x9b, 0x9c, 0x8f, 0xe0, 0x9f, 0x70, 0x5f, 0x55, 0x8c, 0x62, 0xdc, 0x6d, 0x40, 0xb7, 0x5e, 0x3a, 0xa6, 0x25, 0xb6 }; 
@@ -83,15 +97,20 @@ main()
     bksmt_gcm_aes_128_ae(key3, iv3, plaintext3, 20, aad3, 20, ciphertext3, tag3, BKSMT_GCM_T128);
 
     if (memcmp(ciphertext3, ciphertext3ch, 20) != 0) {
-        return 6;
+        return 11;
     }
-
 
     if (memcmp(tag3ch, tag3, 16) != 0) {
-        for(i = 0; i < 16; i++)
-           fprintf(stderr, "%.02x | %.02x\n", tag3[i], tag3ch[i]); 
-        return 7;
+        return 12;
     }
+
+    stat = bksmt_gcm_aes_128_ad(key3, iv3, ciphertext3, 20, aad3, 20, tag3, BKSMT_GCM_T128, plaintext3ch);
+
+    if (memcmp(plaintext3, plaintext3ch, 20) != 0)
+        return 13;
+
+    if (stat != BKSMT_GCM_AD_OK)
+        return 14;
 
 
 

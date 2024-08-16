@@ -6,6 +6,7 @@
 #include <stdlib.h>
 
 #include "aes.h"
+#include "gcm.h"
 #include "../lib/pack.h"
 #include "../lib/math.h"
 #include "../lib/xmalloc.h"
@@ -96,6 +97,38 @@ bksmt_gcm_aes_128_ae(unsigned char key[16], unsigned char iv[12], unsigned char 
 
     memcpy(t, tbig, tlen);
 } 
+
+
+int 
+bksmt_gcm_aes_128_ad(unsigned char key[16], unsigned char iv[12], unsigned char *c, size_t clen, unsigned char *a, size_t alen, unsigned char *t, size_t tlen, unsigned char *p) 
+{
+    unsigned char zerob[16], hskb[16], tbig[16], digestb[16];
+    uint64_t j0[2], j1[2], hsubk[2], digest[2]; 
+
+    prep_j0(iv, j0);   
+
+    j1[0] = j0[0];
+    j1[1] = j0[1];
+ 
+    gcm_inc32(j1);
+
+    gcm_aes_gctr(key, j1, c, clen, p);
+
+    memset(zerob, 0, 16);
+    bksmt_aes_128(zerob, key, hskb);
+    bytetoblk(hskb, hsubk);
+
+    gcm_aes_ghash(hsubk, a, alen, c, clen, digest);
+
+    blktobyte(digest, digestb);
+    gcm_aes_gctr(key, j0, digestb, 16, tbig);
+
+
+    if (memcmp(t, tbig, tlen) != 0)
+        return BKSMT_GCM_AD_FAIL;
+
+    return BKSMT_GCM_AD_OK;
+}
 
 
 static void 
