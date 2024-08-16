@@ -37,6 +37,8 @@ static int blk_getb(uint64_t [2], int);
 
 static void print_blk_bin(uint64_t [2]);
 
+static void prep_j0(unsigned char [12], uint64_t [2]);
+
 static void 
 print_blk_bin(uint64_t blk[2])
 {
@@ -51,19 +53,30 @@ print_blk_bin(uint64_t blk[2])
         fprintf(stderr, "%d", blk_getb(blk, i)); 
 }
 
+static void 
+prep_j0(unsigned char iv[12], uint64_t j0[2]) 
+{
+    uint64_t x1, x2, x3, x4; 
+    j0[1] = bksmt_packbe64(iv);
+    x1 = iv[8];
+    x1 <<= 56;
+    x2 = iv[9];
+    x2 <<= 48;
+    x3 = iv[10];
+    x3 <<= 40;
+    x4 = iv[11];
+    x4 <<= 32;
+    j0[0] = x1 + x2 + x3 + x4 + 0x1;
+}
+
 void
 bksmt_gcm_aes_128_ae(unsigned char key[16], unsigned char iv[12], unsigned char *p, size_t plen, unsigned char *a, size_t alen, unsigned char *c, unsigned char *t, size_t tlen)
 { 
-    unsigned char hskb[16], zerob[16], tbig[16], digestb[16];
-    uint64_t j0[2], j1[2], x1, x2, x3, x4, hsubk[2], digest[2]; 
+    unsigned char zerob[16], hskb[16], tbig[16], digestb[16];
+    uint64_t j0[2], j1[2], hsubk[2], digest[2]; 
 
-    j0[1] = bksmt_packbe64(iv);
-    x1 = (uint64_t)iv[8] << 56;
-    x2 = (uint64_t)iv[9] << 48;
-    x3 = (uint64_t)iv[10] << 40;
-    x4 = (uint64_t)iv[11] << 32;
-    j0[0] = x1 + x2 + x3 + x4 + 0x1;
-    
+    prep_j0(iv, j0);   
+
     j1[0] = j0[0];
     j1[1] = j0[1];
  
@@ -71,16 +84,17 @@ bksmt_gcm_aes_128_ae(unsigned char key[16], unsigned char iv[12], unsigned char 
 
     gcm_aes_gctr(key, j1, p, plen, c);
 
+    memset(zerob, 0, 16);
     bksmt_aes_128(zerob, key, hskb);
     bytetoblk(hskb, hsubk);
 
-//    gcm_aes_ghash(hsubk, a, alen, c, plen, digest);
+    gcm_aes_ghash(hsubk, a, alen, c, plen, digest);
 
-//    blktobyte(digest, digestb);
-//    gcm_aes_gctr(key, j0, digestb, 16, tbig);
+    blktobyte(digest, digestb);
+    gcm_aes_gctr(key, j0, digestb, 16, tbig);
 
 
-//    memcpy(t, tbig, tlen);
+    memcpy(t, tbig, tlen);
 } 
 
 
