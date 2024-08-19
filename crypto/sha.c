@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include <string.h>
 
 /* SHS Section 3.2 */
@@ -340,45 +341,51 @@ static uint64_t sha512_const_lut[80] = {
 }
 
 /* pad for SHA-{1,224,256}, length of output in bytes will be largest multiple of 64 closest to orig len */
-static unsigned char *sha256_pad(unsigned char *, long);
+static unsigned char *sha256_pad(unsigned char *, uint64_t, uint64_t *);
 
-/* returns length of a padded stream given initial length*/
-static long sha256_pad_len(long);
+///* pad for SHA-{1,224,256}, length of output in bytes will be largest multiple of 64 closest to orig len */
+//static unsigned char *sha256_pad_multi(int, va_list);
 
 /* pad for SHA-{384,512,512/224,512/256} length of output in bytes will be largest multiple of 128 closest to orig len */
-static unsigned char *sha512_pad(unsigned char *, long);
-
-/* returns length of a padded stream given initial length*/
-static long sha512_pad_len(long);
-
+static unsigned char *sha512_pad(unsigned char *, uint64_t, uint64_t *);
 
 static uint32_t sha1ft(int , uint32_t, uint32_t, uint32_t);
 
-static void sha1w_gen(uint32_t[80], unsigned char *, int);
+static void sha1w_gen(uint32_t[80], unsigned char *, unsigned char [64], uint64_t, uint64_t);
 
 static void sha256w_gen(uint32_t[65], unsigned char *, int); 
 
 static void sha512w_gen(uint64_t[80], unsigned char *, int); 
 
 void
-bksmt_sha1(unsigned char *src, int len, unsigned char ret[20]) 
+bksmt_sha1(unsigned char *src, uint64_t len, unsigned char ret[20]) 
 {
     uint32_t *prs, work[5], w[80], tmp, hash[5] = SHA1_INIT;
-    int blks, i, t, plen;
+    uint64_t blks, i, t, extra, blen;
+    unsigned char opad[64];
 
-    /* pad input */
-    prs = sha256_pad(src, len);
-
-    /* calc byte length for padded input (essentially size of prs) */
-    plen = sha256_pad_len(len);
 
     /* prs length in # of 512 bit groups */
-    blks = plen/64;
+    blks = len / 64;
+    extra = len % 64;
+
+    /* length in bits */
+    blen = len * 8;
+
+
+    /* construct last block */
+    memcpy(opad, src + len - extra, extra);
+    memset(opad + extra + 1, 0, 63 - extra);
+    opad[extra] = 0x80; 
+    /* write binary rep of len to end */
+    for (i = 0; i < 8; i++) {
+        opad[63 - i] = blen >> (i * 8); 
+    }
 
     /* iterate through 512-bit chunks of message */
-    for(i = 0; i < blks; i++) {
+    for(i = 0; i < blks + 1; i++) {
         /* generate message schedule */
-        sha1w_gen(w, prs, i);
+        sha1w_gen(w, src, opad, i, blks + 1);
 
         /* fill work vars w/ current hash */
         memcpy(work, hash, 20);
@@ -399,12 +406,9 @@ bksmt_sha1(unsigned char *src, int len, unsigned char ret[20])
         }
     }
 
-    free(prs);
-
     for (i = 0; i < 5; i++) 
         bksmt_unpackbe32(hash[i], ret + i * 4); 
 }
-
 
 static uint32_t 
 sha1ft(int t, uint32_t x, uint32_t y, uint32_t z)
@@ -420,28 +424,29 @@ sha1ft(int t, uint32_t x, uint32_t y, uint32_t z)
 }
 
 static void 
-sha1w_gen(uint32_t ret[80], unsigned char *pmsg, int i) 
+sha1w_gen(uint32_t ret[80], unsigned char *pmsg, unsigned char lblock[64], uint64_t i, uint64_t blen) 
 {
     int t;
     for (t = 0; t < 80; t++) {
-        if (t <= 15)
-            ret[t] = bksmt_packbe32(pmsg + 64 * i + 4 * t);
+        if (t <= 15) {
+            if (i == blen - 1)
+                ret[t] = bksmt_packbe32(lblock + 4 * t);
+            else
+                ret[t] = bksmt_packbe32(pmsg + 64 * i + 4 * t);
+        }
         else
             ret[t] = ROTL(ret[t-3] ^ ret[t-8] ^ ret[t-14] ^ ret[t-16], 1);
     }
 }
 
 void
-bksmt_sha256(unsigned char *src, int len, unsigned char ret[32]) 
+bksmt_sha256(unsigned char *src, uint64_t len, unsigned char ret[32]) 
 {
     uint32_t *prs, work[8], w[65], tmp1, tmp2, hash[8] = SHA256_INIT;
-    int blks, i, t, plen;
+    uint64_t blks, i, t, plen;
 
     /* pad input */
-    prs = sha256_pad(src, len);
-
-    /* calc byte length for padded input (essentially size of prs) */
-    plen = sha256_pad_len(len);
+    prs = sha256_pad(src, len, &plen);
 
     /* prs length in # of 512 bit groups */
     blks = plen/64;
@@ -481,16 +486,13 @@ bksmt_sha256(unsigned char *src, int len, unsigned char ret[32])
 }
 
 void
-bksmt_sha224(unsigned char *src, int len, unsigned char ret[28]) 
+bksmt_sha224(unsigned char *src, uint64_t len, unsigned char ret[28]) 
 {
     uint32_t *prs, work[8], w[65], tmp1, tmp2, hash[8] = SHA224_INIT;
-    int blks, i, t, plen;
+    uint64_t blks, i, t, plen;
 
     /* pad input */
-    prs = sha256_pad(src, len);
-
-    /* calc byte length for padded input (essentially size of prs) */
-    plen = sha256_pad_len(len);
+    prs = sha256_pad(src, len, &plen);
 
     /* prs length in # of 512 bit groups */
     blks = plen/64;
@@ -542,16 +544,13 @@ sha256w_gen(uint32_t ret[65], unsigned char *pmsg, int i)
 }
 
 void
-bksmt_sha512(unsigned char *src, int len, unsigned char ret[64]) 
+bksmt_sha512(unsigned char *src, uint64_t len, unsigned char ret[64]) 
 {
     uint64_t *prs, work[8], w[80], tmp1, tmp2, hash[8] = SHA512_INIT;
-    int blks, i, t, plen;
+    uint64_t blks, i, t, plen;
 
     /* pad input */
-    prs = sha512_pad(src, len);
-
-    /* calc byte length for padded input (essentially size of prs) */
-    plen = sha512_pad_len(len);
+    prs = sha512_pad(src, len, &plen);
 
     /* prs length in # of 1024 bit groups */
     blks = plen/128;
@@ -591,16 +590,13 @@ bksmt_sha512(unsigned char *src, int len, unsigned char ret[64])
 }
 
 void
-bksmt_sha384(unsigned char *src, int len, unsigned char ret[48]) 
+bksmt_sha384(unsigned char *src, uint64_t len, unsigned char ret[48]) 
 {
     uint64_t *prs, work[8], w[80], tmp1, tmp2, hash[8] = SHA384_INIT;
-    int blks, i, t, plen;
+    uint64_t blks, i, t, plen;
 
     /* pad input */
-    prs = sha512_pad(src, len);
-
-    /* calc byte length for padded input (essentially size of prs) */
-    plen = sha512_pad_len(len);
+    prs = sha512_pad(src, len, &plen);
 
     /* prs length in # of 1024 bit groups */
     blks = plen/128;
@@ -640,17 +636,14 @@ bksmt_sha384(unsigned char *src, int len, unsigned char ret[48])
 }
 
 void
-bksmt_sha512t224(unsigned char *src, int len, unsigned char ret[28]) 
+bksmt_sha512t224(unsigned char *src, uint64_t len, unsigned char ret[28]) 
 {
     uint64_t *prs, work[8], w[80], tmp1, tmp2, hash[8] = SHA512224_INIT;
-    int blks, i, t, plen;
+    uint64_t blks, i, t, plen;
     unsigned char tmpstr[8];
 
     /* pad input */
-    prs = sha512_pad(src, len);
-
-    /* calc byte length for padded input (essentially size of prs) */
-    plen = sha512_pad_len(len);
+    prs = sha512_pad(src, len, &plen);
 
     /* prs length in # of 1024 bit groups */
     blks = plen/128;
@@ -693,16 +686,13 @@ bksmt_sha512t224(unsigned char *src, int len, unsigned char ret[28])
 }
 
 void
-bksmt_sha512t256(unsigned char *src, int len, unsigned char ret[32]) 
+bksmt_sha512t256(unsigned char *src, uint64_t len, unsigned char ret[32]) 
 {
     uint64_t *prs, work[8], w[80], tmp1, tmp2, hash[8] = SHA512256_INIT;
-    int blks, i, t, plen;
+    uint64_t blks, i, t, plen;
 
     /* pad input */
-    prs = sha512_pad(src, len);
-
-    /* calc byte length for padded input (essentially size of prs) */
-    plen = sha512_pad_len(len);
+    prs = sha512_pad(src, len, &plen);
 
     /* prs length in # of 1024 bit groups */
     blks = plen/128;
@@ -754,7 +744,7 @@ sha512w_gen(uint64_t ret[80], unsigned char *pmsg, int i)
 }
 
 static unsigned char * 
-sha256_pad(unsigned char *msg, long len)
+sha256_pad(unsigned char *msg, uint64_t len, uint64_t *nlen)
 {
     long blen;
     int pblen, applen, i, mask;
@@ -768,6 +758,8 @@ sha256_pad(unsigned char *msg, long len)
 
     /* appendix len in bytes */
     applen = (pblen + 1 + 64)/8;
+
+    *nlen = applen + len;
 
     /* make a return msg of size len + appendix len */
     ret = xzallocarray(len + applen, sizeof *ret);
@@ -784,27 +776,10 @@ sha256_pad(unsigned char *msg, long len)
     }
 
     return ret;
-}
-
-static long 
-sha256_pad_len(long len)
-{
-    long blen, pblen, applen;
-
-    /* orig len in bits */
-    blen  = 8 * len;
-
-    /* padding length in bits */
-    pblen = pmod((448 - blen - 1), 512);
-
-    /* appendix len in bytes */
-    applen = (pblen + 1 + 64)/8;
-
-    return len + applen;
 }
 
 static unsigned char * 
-sha512_pad(unsigned char *msg, long len) 
+sha512_pad(unsigned char *msg, uint64_t len, uint64_t *nlen) 
 {
     long blen;
     int pblen, applen, i, mask;
@@ -818,6 +793,8 @@ sha512_pad(unsigned char *msg, long len)
 
     /* appendix len in bytes */
     applen = (pblen + 1 + 128)/8;
+
+    *nlen = len + applen;
 
     /* make a return msg of size len + appendix len */
     ret = xzallocarray(len + applen, sizeof *ret);
@@ -836,19 +813,3 @@ sha512_pad(unsigned char *msg, long len)
     return ret;
 }
 
-static long 
-sha512_pad_len(long len)
-{
-    long blen, pblen, applen;
-
-    /* orig len in bits */
-    blen  = 8 * len;
-
-    /* padding length in bits */
-    pblen = pmod((896 - blen - 1), 1024);
-
-    /* appendix len in bytes */
-    applen = (pblen + 1 + 128)/8;
-
-    return len + applen;
-}
