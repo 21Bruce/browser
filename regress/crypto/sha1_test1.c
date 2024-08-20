@@ -23,9 +23,25 @@ main(void)
 
     if (memcmp(res2, res2ch, 20) != 0)
         return 2;
+                      
 
+    char test3[63] = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    unsigned char res3[20];
+    unsigned char res3ch[20] = { 0x03, 0xf0, 0x9f, 0x5b, 0x15, 0x8a, 0x7a, 0x8c, 0xda, 0xd9, 0x20, 0xbd, 0xdc, 0x29, 0xb8, 0x1c, 0x18, 0xa5, 0x51, 0xf5 };
 
+    bksmt_sha1(test3, 63, res3);
 
+    if (memcmp(res3, res3ch, 20) != 0)
+        return 3;
+ 
+    char test4[64] = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    unsigned char res4[20];
+    unsigned char res4ch[20] = { 0xc2, 0xdb, 0x33, 0x0f, 0x60, 0x83, 0x85, 0x4c, 0x99, 0xd4, 0xb5, 0xbf, 0xb6, 0xe8, 0xf2, 0x9f, 0x20, 0x1b, 0xe6, 0x99 };
+
+    bksmt_sha1(test4, 56, res4);
+
+    if (memcmp(res4, res4ch, 20) != 0)
+        return 4;
 
     return 0;
 }
