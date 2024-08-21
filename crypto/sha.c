@@ -346,9 +346,11 @@ static void sha1w_gen(uint32_t[80], unsigned char *, unsigned char [64], unsigne
 
 static void sha256w_gen(uint32_t[65], unsigned char *, unsigned char [64], unsigned char [64], uint64_t, uint64_t);
 
-static void sha512w_gen(uint64_t [80], unsigned char *, unsigned char [128], uint64_t , uint64_t); 
+static void sha512w_gen(uint64_t [80], unsigned char *, unsigned char [128], unsigned char [128], uint64_t, uint64_t);
 
 static void sha256_pad_gen(unsigned char *, uint64_t, unsigned char[64], unsigned char[64], uint64_t *);
+
+static void sha512_pad_gen(unsigned char *, uint64_t, unsigned char[128], unsigned char[128], uint64_t *);
 
 static void 
 sha256_pad_gen(unsigned char *src, uint64_t len, unsigned char opad1[64], unsigned char opad2[64], uint64_t *blkf )
@@ -372,15 +374,47 @@ sha256_pad_gen(unsigned char *src, uint64_t len, unsigned char opad1[64], unsign
 
     if (extra < 56) {
         /* if we have enough space for the 8 bit block, we only need one pad */
-        bksmt_unpackbe64((uint64_t)blen, opad1 + 56); 
+        bksmt_unpackbe64(blen, opad1 + 56); 
         *blkf = blks + 1;
     } else {
         /* else, we need a whole new block to put the length in */
-        memset(opad2, 0, 64 - 8);
-        bksmt_unpackbe64((uint64_t)blen, opad2 + 56); 
+        memset(opad2, 0, 56);
+        bksmt_unpackbe64(blen, opad2 + 56); 
         *blkf = blks + 2;
     }
 }
+
+static void 
+sha512_pad_gen(unsigned char *src, uint64_t len, unsigned char opad1[128], unsigned char opad2[128], uint64_t *blkf )
+{
+    uint64_t blks, extra, blen;
+
+    /* prs length in # of 512 bit groups */
+    blks = len / 128;
+    extra = len % 128;
+
+    /* length in bits */
+    blen = len * 8;
+
+    /* construct last block */
+    memcpy(opad1, src + len - extra, extra);
+    memset(opad1 + extra + 1, 0, 127 - extra);
+    opad1[extra] = 0x80; 
+
+    /* write binary rep of len to end */
+
+    if (extra < 112) {
+        /* if we have enough space for the 8 bit block, we only need one pad */
+        bksmt_unpackbe64(blen, opad1 + 120); 
+        *blkf = blks + 1;
+    } else {
+        /* else, we need a whole new block to put the length in */
+        memset(opad2, 0, 120);
+        bksmt_unpackbe64(blen, opad2 + 120); 
+        *blkf = blks + 2;
+    }
+}
+
 
 void
 bksmt_sha1(unsigned char *src, uint64_t len, unsigned char ret[20]) 
@@ -393,6 +427,7 @@ bksmt_sha1(unsigned char *src, uint64_t len, unsigned char ret[20])
     /* prs length in # of 512 bit groups */
     blks = len / 64;
 
+    /* generate extra pad block */
     sha256_pad_gen(src, len, opad1, opad2, &blkf);
 
     /* iterate through 512-bit chunks of message */
@@ -567,30 +602,19 @@ void
 bksmt_sha512(unsigned char *src, uint64_t len, unsigned char ret[64]) 
 {
     uint64_t *prs, work[8], w[80], tmp1, tmp2, hash[8] = SHA512_INIT;
-    uint64_t blks, i, t, extra, blen;
-    unsigned char opad[128];
+    uint64_t blks, i, t, extra, blen, blkf;
+    unsigned char opad1[128], opad2[128];
 
 
     /* prs length in # of 1024 bit groups */
     blks = len / 128;
-    extra = len % 128;
 
-    /* length in bits */
-    blen = len * 8;
-
-    /* construct last block */
-    memcpy(opad, src + len - extra, extra);
-    memset(opad + extra + 1, 0, 127 - extra);
-    opad[extra] = 0x80; 
-    /* write binary rep of len to end */
-    for (i = 0; i < 8; i++) {
-        opad[127 - i] = blen >> (i * 8); 
-    }
+    sha512_pad_gen(src, len, opad1, opad2, &blkf);
 
     /* iterate through 512-bit chunks of message */
-    for(i = 0; i < blks + 1; i++) {
+    for(i = 0; i < blkf; i++) {
         /* generate message schedule */
-        sha512w_gen(w, src, opad, i, blks + 1);
+        sha512w_gen(w, src, opad1, opad2, i, blks);
 
         /* fill work vars w/ current hash */
         memcpy(work, hash, 64);
@@ -623,30 +647,18 @@ void
 bksmt_sha384(unsigned char *src, uint64_t len, unsigned char ret[48]) 
 {
     uint64_t *prs, work[8], w[80], tmp1, tmp2, hash[8] = SHA384_INIT;
-    uint64_t blks, i, t, extra, blen;
-    unsigned char opad[128];
-
+    uint64_t blks, i, t, extra, blen, blkf;
+    unsigned char opad1[128], opad2[128];
 
     /* prs length in # of 1024 bit groups */
     blks = len / 128;
-    extra = len % 128;
 
-    /* length in bits */
-    blen = len * 8;
-
-    /* construct last block */
-    memcpy(opad, src + len - extra, extra);
-    memset(opad + extra + 1, 0, 127 - extra);
-    opad[extra] = 0x80; 
-    /* write binary rep of len to end */
-    for (i = 0; i < 8; i++) {
-        opad[127 - i] = blen >> (i * 8); 
-    }
+    sha512_pad_gen(src, len, opad1, opad2, &blkf);
 
     /* iterate through 512-bit chunks of message */
-    for(i = 0; i < blks + 1; i++) {
+    for(i = 0; i < blkf; i++) {
         /* generate message schedule */
-        sha512w_gen(w, src, opad, i, blks + 1);
+        sha512w_gen(w, src, opad1, opad2, i, blks);
 
         /* fill work vars w/ current hash */
         memcpy(work, hash, 64);
@@ -679,30 +691,18 @@ void
 bksmt_sha512t224(unsigned char *src, uint64_t len, unsigned char ret[28]) 
 {
     uint64_t *prs, work[8], w[80], tmp1, tmp2, hash[8] = SHA512224_INIT;
-    uint64_t blks, i, t, extra, blen;
-    unsigned char opad[128], tmpstr[8];
-
+    uint64_t blks, i, t, extra, blen, blkf;
+    unsigned char opad1[128], opad2[128], tmpstr[8];
 
     /* prs length in # of 1024 bit groups */
     blks = len / 128;
-    extra = len % 128;
 
-    /* length in bits */
-    blen = len * 8;
-
-    /* construct last block */
-    memcpy(opad, src + len - extra, extra);
-    memset(opad + extra + 1, 0, 127 - extra);
-    opad[extra] = 0x80; 
-    /* write binary rep of len to end */
-    for (i = 0; i < 8; i++) {
-        opad[127 - i] = blen >> (i * 8); 
-    }
+    sha512_pad_gen(src, len, opad1, opad2, &blkf);
 
     /* iterate through 512-bit chunks of message */
-    for(i = 0; i < blks + 1; i++) {
+    for(i = 0; i < blkf; i++) {
         /* generate message schedule */
-        sha512w_gen(w, src, opad, i, blks + 1);
+        sha512w_gen(w, src, opad1, opad2, i, blks);
 
         /* fill work vars w/ current hash */
         memcpy(work, hash, 64);
@@ -738,30 +738,18 @@ void
 bksmt_sha512t256(unsigned char *src, uint64_t len, unsigned char ret[32]) 
 {
     uint64_t *prs, work[8], w[80], tmp1, tmp2, hash[8] = SHA512256_INIT;
-    uint64_t blks, i, t, extra, blen;
-    unsigned char opad[128];
-
+    uint64_t blks, i, t, extra, blen, blkf;
+    unsigned char opad1[128], opad2[128];
 
     /* prs length in # of 1024 bit groups */
     blks = len / 128;
-    extra = len % 128;
 
-    /* length in bits */
-    blen = len * 8;
-
-    /* construct last block */
-    memcpy(opad, src + len - extra, extra);
-    memset(opad + extra + 1, 0, 127 - extra);
-    opad[extra] = 0x80; 
-    /* write binary rep of len to end */
-    for (i = 0; i < 8; i++) {
-        opad[127 - i] = blen >> (i * 8); 
-    }
+    sha512_pad_gen(src, len, opad1, opad2, &blkf);
 
     /* iterate through 512-bit chunks of message */
-    for(i = 0; i < blks + 1; i++) {
+    for(i = 0; i < blkf; i++) {
         /* generate message schedule */
-        sha512w_gen(w, src, opad, i, blks + 1);
+        sha512w_gen(w, src, opad1, opad2, i, blks);
 
         /* fill work vars w/ current hash */
         memcpy(work, hash, 64);
@@ -792,13 +780,15 @@ bksmt_sha512t256(unsigned char *src, uint64_t len, unsigned char ret[32])
 }
 
 static void 
-sha512w_gen(uint64_t ret[80], unsigned char *pmsg, unsigned char lblock[128], uint64_t i, uint64_t blen) 
+sha512w_gen(uint64_t ret[80], unsigned char *pmsg, unsigned char opad1[128], unsigned char opad2[128], uint64_t i, uint64_t blen) 
 {
     int t;
     for (t = 0; t < 80; t++) {
         if (t <= 15) {
-            if (i == blen-1)
-                ret[t] = bksmt_packbe64(lblock + 8 * t);
+            if (i == blen)
+                ret[t] = bksmt_packbe64(opad1 + 8 * t);
+            else if (i == blen + 1)
+                ret[t] = bksmt_packbe64(opad2 + 8 * t);
             else 
                 ret[t] = bksmt_packbe64(pmsg + 128 * i + 8 * t);
         } else
