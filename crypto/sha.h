@@ -37,5 +37,17 @@ void bksmt_sha256_multi(unsigned char *, uint64_t, unsigned char *, uint64_t, un
 /* Args: front pad, len, msg, len, back pad, len, output */
 void bksmt_sha224_multi(unsigned char *, uint64_t, unsigned char *, uint64_t, unsigned char *, uint64_t, unsigned char[28]);
 
+/* Args: front pad, len, msg, len, back pad, len, output */
+void bksmt_sha512_multi(unsigned char *, uint64_t, unsigned char *, uint64_t, unsigned char *, uint64_t, unsigned char[64]);
+                                                         
+/* Args: front pad, len, msg, len, back pad, len, output */
+void bksmt_sha384_multi(unsigned char *, uint64_t, unsigned char *, uint64_t, unsigned char *, uint64_t, unsigned char[48]);
+
+/* Args: front pad, len, msg, len, back pad, len, output */
+void bksmt_sha512t224_multi(unsigned char *, uint64_t, unsigned char *, uint64_t, unsigned char *, uint64_t, unsigned char[28]);
+                                                         
+/* Args: front pad, len, msg, len, back pad, len, output */
+void bksmt_sha512t256_multi(unsigned char *, uint64_t, unsigned char *, uint64_t, unsigned char *, uint64_t, unsigned char[32]);
+
 
 #endif /* __BKSMT_CRYPTO_SHA_H__ */
