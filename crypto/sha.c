@@ -344,20 +344,68 @@ static uint32_t sha1_ft(int , uint32_t, uint32_t, uint32_t);
 
 static void sha1_w_gen(uint32_t[80], unsigned char *, unsigned char [64], unsigned char [64], uint64_t, uint64_t);
 
-static void sha256_w_gen(uint32_t[65], unsigned char *, unsigned char [64], unsigned char [64], uint64_t, uint64_t);
+static void sha256_w_gen(uint32_t[65], unsigned char [64]);
 
 static void sha512_w_gen(uint64_t [80], unsigned char *, unsigned char [128], unsigned char [128], uint64_t, uint64_t);
 
 static void sha256_pad_gen(unsigned char *, uint64_t, unsigned char[64], unsigned char[64], uint64_t *);
+
+static void sha256_multi_pad_gen(unsigned char *, uint64_t, unsigned char *, uint64_t, unsigned char *, uint64_t, unsigned char[64], unsigned char[64], uint64_t *);
+
+static void sha256_work_round(uint32_t [8], unsigned char [64]);
 
 static void sha512_pad_gen(unsigned char *, uint64_t, unsigned char[128], unsigned char[128], uint64_t *);
 
 static void sha256_hash_gen(unsigned char *, uint64_t, uint32_t [8]);
 
 static void sha512_hash_gen(unsigned char *, uint64_t, uint64_t [8]);
+ 
+static void sha256_multi_hash_gen(unsigned char *, uint64_t, unsigned char *, uint64_t, unsigned char *, uint64_t, uint32_t [8]);
 
 static void 
-sha256_pad_gen(unsigned char *src, uint64_t len, unsigned char opad1[64], unsigned char opad2[64], uint64_t *blkf )
+sha256_multi_pad_gen(unsigned char *front, uint64_t flen, unsigned char *src, uint64_t len, unsigned char *back, uint64_t blen, unsigned char opad1[64], unsigned char opad2[64], uint64_t *blkf)
+{
+    uint64_t blks, extra, extrat, bitlen, fullen;
+
+    /* calculate the full length */
+    fullen = flen + len + blen;
+
+    blks = fullen / 64;
+    extra = fullen % 64;
+
+    /* length in bits */
+    bitlen = fullen * 8;
+
+    /* copy in bits from the whole msg into last block */
+    if (extra <= blen) { 
+        memcpy(opad1, back + blen - extra, extra);
+    } else if (extra <= blen + len) {
+        memcpy(opad1, src + len - extra + blen, extra - blen);
+        memcpy(opad1 + extra - blen, back, blen);
+    } else {
+        memcpy(opad1, front + flen - extra + blen + len, extra - blen - len);
+        memcpy(opad1 + extra - len - blen, src, len);
+        memcpy(opad1 + extra - blen, back, blen);
+    }
+
+    memset(opad1 + extra + 1, 0, 63 - extra);
+    opad1[extra] = 0x80; 
+
+    if (extra < 56) {
+        /* if we have enough space for the 8 bit block, we only need one pad */
+        bksmt_unpackbe64(bitlen, opad1 + 56); 
+        *blkf = blks + 1;
+    } else {
+        /* else, we need a whole new block to put the length in */
+        memset(opad2, 0, 56);
+        bksmt_unpackbe64(bitlen, opad2 + 56); 
+        *blkf = blks + 2;
+    }
+
+}
+
+static void 
+sha256_pad_gen(unsigned char *src, uint64_t len, unsigned char opad1[64], unsigned char opad2[64], uint64_t *blkf)
 {
     uint64_t blks, extra, blen;
 
@@ -500,6 +548,18 @@ bksmt_sha256(unsigned char *src, uint64_t len, unsigned char ret[32])
 }
 
 void
+bksmt_sha256_multi(unsigned char *front, uint64_t flen, unsigned char *src, uint64_t len, unsigned char *back, uint64_t blen, unsigned char ret[32]) 
+{
+    uint64_t i;
+    uint32_t hash[8] = SHA256_INIT;
+
+    sha256_multi_hash_gen(front, flen, src, len, back, blen, hash);
+
+    for (i = 0; i < 8; i++) 
+        bksmt_unpackbe32(hash[i], ret + i * 4); 
+}
+
+void
 bksmt_sha224(unsigned char *src, uint64_t len, unsigned char ret[28]) 
 {
     uint32_t hash[8] = SHA224_INIT;
@@ -511,59 +571,164 @@ bksmt_sha224(unsigned char *src, uint64_t len, unsigned char ret[28])
         bksmt_unpackbe32(hash[i], ret + i * 4); 
 }
 
+void
+bksmt_sha224_multi(unsigned char *front, uint64_t flen, unsigned char *src, uint64_t len, unsigned char *back, uint64_t blen, unsigned char ret[28]) 
+{
+    uint32_t hash[8] = SHA224_INIT;
+    uint64_t i;
+
+    sha256_multi_hash_gen(front, flen, src, len, back, blen, hash);
+
+    for (i = 0; i < 7; i++) 
+        bksmt_unpackbe32(hash[i], ret + i * 4); 
+}
+
+static void 
+sha256_multi_hash_gen(unsigned char *front, uint64_t flen, unsigned char *src, uint64_t len, unsigned char *back, uint64_t blen, uint32_t hash[8])
+{
+    uint64_t blks, blkfr, extrafr, blksr, extrasr, blkba, extraba, i, fullen, blkf, off;
+    unsigned char gblk[64], opad1[64], opad2[64];
+
+    fullen = flen + len + blen;
+    blks = fullen / 64;
+    blkfr = flen / 64;
+    extrafr = flen % 64;
+     
+    sha256_multi_pad_gen(front, flen, src, len, back, blen, opad1, opad2, &blkf);
+
+
+
+
+    if (blks == 0)
+        goto pad;
+
+    for(i = 0; i < blkfr; i++) 
+        sha256_work_round(hash, front + i * 64);
+
+    if (extrafr + len + blen <= 64) 
+        goto pad;
+
+    if (extrafr != 0) {
+        memcpy(gblk, front + flen - extrafr, extrafr);
+        if (64 - extrafr <= len) {
+            memcpy(gblk + extrafr, src, 64 - extrafr);
+            off = 64 - extrafr;
+            sha256_work_round(hash, gblk);
+        } else {
+            memcpy(gblk + extrafr, src, len);
+            memcpy(gblk + extrafr + len, back, 64 - extrafr - len);
+            off = 64 - extrafr - len;
+            sha256_work_round(hash, gblk);
+            goto back;
+        } 
+    } else {
+        off = 0;
+    }
+
+
+    blksr = (len - off) / 64;
+    extrasr = (len - off) % 64;
+
+
+    for(i = 0; i < blksr; i++) 
+        sha256_work_round(hash, src + i * 64 + off);
+
+
+    if (extrasr + blen <= 64) 
+        goto pad;
+
+    if (extrasr != 0) {
+        memcpy(gblk, src + off + i * blksr, extrasr);
+        if (blen >= 64) {
+            memcpy(gblk + extrasr, back, 64 - extrasr);
+            off = 64 - extrasr;
+            sha256_work_round(hash, gblk);
+        } else {
+            memcpy(gblk + extrasr, back, blen - extrasr);
+            sha256_work_round(hash, gblk);
+            goto pad;
+        }
+    } else {
+        off = 0;
+    }
+
+back:
+
+    blkba = (blen - off) / 64;
+
+    for(i = 0; i < blkba; i++) 
+        sha256_work_round(hash, back + i * 64 + off);
+
+pad:
+    sha256_work_round(hash, opad1);
+
+    if (blkf - blks == 2)
+        sha256_work_round(hash, opad2);
+}
+
 static void 
 sha256_hash_gen(unsigned char *src, uint64_t len, uint32_t hash[8])
 {
-    uint32_t work[8], w[65], tmp1, tmp2;
-    uint64_t blks, t, i, extra, blen, blkf;
+    uint64_t blks, i, extra, blen, blkf;
     unsigned char opad1[64], opad2[64];
 
     blks = len / 64;
 
     sha256_pad_gen(src, len, opad1, opad2, &blkf);
 
+    for (int t = 0; t < 64; t++)
+        fprintf(stderr, "%.02x ", opad1[t]);
+
     /* iterate through 512-bit chunks of message */
-    for(i = 0; i < blkf; i++) {
-        /* generate message schedule */
-        sha256_w_gen(w, src, opad1, opad2, i, blks);
+    for(i = 0; i < blks; i++) 
+        sha256_work_round(hash, src + i * 64);
 
-        /* fill work vars w/ current hash */
-        memcpy(work, hash, 32);
- 
-        /* generate new work vars */
-        for (t = 0; t < 64; t++) {
-            tmp1 = work[7] + SUM2561(work[4]) + CH(work[4], work[5], work[6]) + sha256_const_lut[t] + w[t];
-            tmp2 = SUM2560(work[0]) + MAJ(work[0], work[1], work[2]);
-            work[7] = work[6];
-            work[6] = work[5];
-            work[5] = work[4];
-            work[4] = work[3] + tmp1;
-            work[3] = work[2];
-            work[2] = work[1];
-            work[1] = work[0];
-            work[0] = tmp1 + tmp2;
-       }
+    sha256_work_round(hash, opad1);
 
-        /* add work to hash */
-        for (t = 0; t < 8; t++) {
-            hash[t] = hash[t] + work[t];
-        }
+    if (blkf - blks == 2)
+        sha256_work_round(hash, opad2);
+}
+
+static void 
+sha256_work_round(uint32_t hash[8], unsigned char cblk[64])
+{
+    uint32_t work[8], w[65], tmp1, tmp2;
+    uint64_t t;
+
+    /* generate message schedule */
+    sha256_w_gen(w, cblk);
+    
+    /* fill work vars w/ current hash */
+    memcpy(work, hash, 32);
+    
+    /* generate new work vars */
+    for (t = 0; t < 64; t++) {
+        tmp1 = work[7] + SUM2561(work[4]) + CH(work[4], work[5], work[6]) + sha256_const_lut[t] + w[t];
+        tmp2 = SUM2560(work[0]) + MAJ(work[0], work[1], work[2]);
+        work[7] = work[6];
+        work[6] = work[5];
+        work[5] = work[4];
+        work[4] = work[3] + tmp1;
+        work[3] = work[2];
+        work[2] = work[1];
+        work[1] = work[0];
+        work[0] = tmp1 + tmp2;
+    }
+    
+    /* add work to hash */
+    for (t = 0; t < 8; t++) {
+        hash[t] = hash[t] + work[t];
     }
 }
 
 static void 
-sha256_w_gen(uint32_t ret[65], unsigned char *pmsg, unsigned char opad1[64], unsigned char opad2[64], uint64_t i, uint64_t blen)
+sha256_w_gen(uint32_t ret[65], unsigned char blk[64])
 {
     int t;
     for (t = 0; t < 64; t++) {
-        if (t <= 15) {
-            if (i == blen)
-                ret[t] = bksmt_packbe32(opad1 + 4 * t);
-            else if (i == blen + 1)
-                ret[t] = bksmt_packbe32(opad2 + 4 * t);
-            else 
-                ret[t] = bksmt_packbe32(pmsg + 64 * i + 4 * t);
-        } else
+        if (t <= 15) 
+            ret[t] = bksmt_packbe32(blk + 4 * t);
+        else
             ret[t] = (SIG2561(ret[t-2]) + ret[t-7] + SIG2560(ret[t-15]) + ret[t-16]);
     }
 }
