@@ -868,6 +868,17 @@ bksmt_sha384(unsigned char *src, uint64_t len, unsigned char ret[48])
 }
 
 void
+bksmt_sha384_multi(unsigned char *front, uint64_t flen, unsigned char *src, uint64_t len, unsigned char *back, uint64_t blen, unsigned char ret[48]) 
+{
+    uint64_t i, hash[8] = SHA384_INIT;
+
+    sha512_multi_hash_gen(front, flen, src, len, back, blen, hash);
+
+    for (i = 0; i < 6; i++) 
+        bksmt_unpackbe64(hash[i], ret + i * 8); 
+}
+
+void
 bksmt_sha512t224(unsigned char *src, uint64_t len, unsigned char ret[28]) 
 {
     uint64_t i, hash[8] = SHA512224_INIT;
@@ -883,11 +894,38 @@ bksmt_sha512t224(unsigned char *src, uint64_t len, unsigned char ret[28])
 }
 
 void
-bksmt_sha512t256(unsigned char *src, uint64_t len, unsigned char ret[32]) 
+bksmt_sha512t224_multi(unsigned char *front, uint64_t flen, unsigned char *src, uint64_t len, unsigned char *back, uint64_t blen, unsigned char ret[28])
+{
+    uint64_t i, hash[8] = SHA512224_INIT;
+    unsigned char tmpstr[8];
+
+    sha512_multi_hash_gen(front, flen, src, len, back, blen, hash);
+
+    for (i = 0; i < 3; i++) 
+        bksmt_unpackbe64(hash[i], ret + i * 8); 
+    bksmt_unpackbe64(hash[3], tmpstr);
+
+    memcpy(ret + 24, tmpstr, 4);
+}
+
+void
+bksmt_sha512t256(unsigned char *src, uint64_t len, unsigned char ret[32])
 {
     uint64_t i, hash[8] = SHA512256_INIT;
 
     sha512_hash_gen(src, len, hash);
+
+    for (i = 0; i < 4; i++) 
+        bksmt_unpackbe64(hash[i], ret + i * 8); 
+
+}
+
+void
+bksmt_sha512t256_multi(unsigned char *front, uint64_t flen, unsigned char *src, uint64_t len, unsigned char *back, uint64_t blen, unsigned char ret[32]) 
+{
+    uint64_t i, hash[8] = SHA512256_INIT;
+
+    sha512_multi_hash_gen(front, flen, src, len, back, blen, hash);
 
     for (i = 0; i < 4; i++) 
         bksmt_unpackbe64(hash[i], ret + i * 8); 
