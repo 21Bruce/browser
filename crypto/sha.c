@@ -741,7 +741,7 @@ sha512_multi_hash_gen(unsigned char *front, uint64_t flen, unsigned char *src, u
 
 
     for(i = 0; i < blksr; i++) 
-        sha256_work_round(hash, src + i * 128 + off);
+        sha512_work_round(hash, src + i * 128 + off);
 
     off = 0;
     if (extrasr != 0) {
@@ -904,7 +904,7 @@ sha512_hash_gen(unsigned char *src, uint64_t len, uint64_t hash[8])
 
     sha512_pad_gen(src, len, opad1, opad2, &blkf);
 
-    /* iterate through 512-bit chunks of message */
+    /* iterate through 1024-bit chunks of message */
     for(i = 0; i < blks; i++) 
         sha512_work_round(hash, src + i * 128);
 
