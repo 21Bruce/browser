@@ -26,25 +26,36 @@ void bksmt_sha512t224(unsigned char *, uint64_t, unsigned char[28]);
 /* Args: msg, len, output */
 void bksmt_sha512t256(unsigned char *, uint64_t, unsigned char[32]);
 
-/* SHA api methods allowing for padding around input message */
+/* this allows us to continuously hash different buffers into the same digest */
 
-/* Args: front pad, len, msg, len, back pad, len, output */
-void bksmt_sha256_multi(unsigned char *, uint64_t, unsigned char *, uint64_t, unsigned char *, uint64_t, unsigned char[32]);
-                                                         
-/* Args: front pad, len, msg, len, back pad, len, output */
-void bksmt_sha224_multi(unsigned char *, uint64_t, unsigned char *, uint64_t, unsigned char *, uint64_t, unsigned char[28]);
+struct bksmt_sha256_ctx {
+    uint32_t hash[8];
+    unsigned char blk[64];
+    uint64_t len;
+    int aib;
+};
 
-/* Args: front pad, len, msg, len, back pad, len, output */
-void bksmt_sha512_multi(unsigned char *, uint64_t, unsigned char *, uint64_t, unsigned char *, uint64_t, unsigned char[64]);
-                                                         
-/* Args: front pad, len, msg, len, back pad, len, output */
-void bksmt_sha384_multi(unsigned char *, uint64_t, unsigned char *, uint64_t, unsigned char *, uint64_t, unsigned char[48]);
+struct bksmt_sha512_ctx {
+    uint64_t hash[8];
+    unsigned char blk[128];
+    uint64_t len;
+    int aib;
+};
 
-/* Args: front pad, len, msg, len, back pad, len, output */
-void bksmt_sha512t224_multi(unsigned char *, uint64_t, unsigned char *, uint64_t, unsigned char *, uint64_t, unsigned char[28]);
-                                                         
-/* Args: front pad, len, msg, len, back pad, len, output */
-void bksmt_sha512t256_multi(unsigned char *, uint64_t, unsigned char *, uint64_t, unsigned char *, uint64_t, unsigned char[32]);
+void bksmt_sha224_ctx_init(struct bksmt_sha256_ctx *);
+
+void bksmt_sha256_ctx_init(struct bksmt_sha256_ctx *);
+
+void bksmt_sha224_ctx_hash(struct bksmt_sha256_ctx *, unsigned char *, uint64_t);
+
+void bksmt_sha256_ctx_hash(struct bksmt_sha256_ctx *, unsigned char *, uint64_t);
+
+void bksmt_sha224_ctx_init(struct bksmt_sha256_ctx *);
+
+void bksmt_sha256_ctx_finish(struct bksmt_sha256_ctx *, unsigned char [32]);
+
+void bksmt_sha224_ctx_finish(struct bksmt_sha256_ctx *, unsigned char [28]);
+
 
 
 #endif /* __BKSMT_CRYPTO_SHA_H__ */
