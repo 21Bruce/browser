@@ -50,12 +50,32 @@ void bksmt_sha224_ctx_hash(struct bksmt_sha256_ctx *, unsigned char *, uint64_t)
 
 void bksmt_sha256_ctx_hash(struct bksmt_sha256_ctx *, unsigned char *, uint64_t);
 
-void bksmt_sha224_ctx_init(struct bksmt_sha256_ctx *);
-
 void bksmt_sha256_ctx_finish(struct bksmt_sha256_ctx *, unsigned char [32]);
 
 void bksmt_sha224_ctx_finish(struct bksmt_sha256_ctx *, unsigned char [28]);
 
+void bksmt_sha512_ctx_init(struct bksmt_sha512_ctx *);
 
+void bksmt_sha384_ctx_init(struct bksmt_sha512_ctx *);
+
+void bksmt_sha512t224_ctx_init(struct bksmt_sha512_ctx *);
+
+void bksmt_sha512t256_ctx_init(struct bksmt_sha512_ctx *);
+
+void bksmt_sha512_ctx_hash(struct bksmt_sha512_ctx *, unsigned char *, uint64_t);
+
+void bksmt_sha384_ctx_hash(struct bksmt_sha512_ctx *, unsigned char *, uint64_t);
+
+void bksmt_sha512t224_ctx_hash(struct bksmt_sha512_ctx *, unsigned char *, uint64_t);
+
+void bksmt_sha512t256_ctx_hash(struct bksmt_sha512_ctx *, unsigned char *, uint64_t);
+
+void bksmt_sha512_ctx_finish(struct bksmt_sha512_ctx *, unsigned char [64]);
+
+void bksmt_sha384_ctx_finish(struct bksmt_sha512_ctx *, unsigned char [48]);
+
+void bksmt_sha512t224_ctx_finish(struct bksmt_sha512_ctx *, unsigned char [28]);
+
+void bksmt_sha512t256_ctx_finish(struct bksmt_sha512_ctx *, unsigned char [32]);
 
 #endif /* __BKSMT_CRYPTO_SHA_H__ */

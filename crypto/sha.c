@@ -342,6 +342,9 @@ static uint64_t sha512_const_lut[80] = {
 
 /* STATIC func decls */
 
+static void sha512_ctx_pad(struct bksmt_sha512_ctx *);
+
+static void sha512_ctx_hash(struct bksmt_sha512_ctx *, unsigned char *, uint64_t);
 
 static void sha256_ctx_pad(struct bksmt_sha256_ctx *);
 
@@ -563,6 +566,120 @@ bksmt_sha256_ctx_init(struct bksmt_sha256_ctx *ctx)
 }
 
 void 
+bksmt_sha512_ctx_finish(struct bksmt_sha512_ctx *ctx, unsigned char ret[64])
+{
+    int i;
+
+    sha512_ctx_pad(ctx);
+
+    for (i = 0; i < 8; i++) 
+        bksmt_unpackbe64(ctx->hash[i], ret + i * 8); 
+}
+
+void 
+bksmt_sha384_ctx_finish(struct bksmt_sha512_ctx *ctx, unsigned char ret[48])
+{
+    int i;
+
+    sha512_ctx_pad(ctx);
+
+    for (i = 0; i < 6; i++) 
+        bksmt_unpackbe64(ctx->hash[i], ret + i * 8); 
+}
+
+void 
+bksmt_sha512t256_ctx_finish(struct bksmt_sha512_ctx *ctx, unsigned char ret[32])
+{
+    int i;
+
+    sha512_ctx_pad(ctx);
+
+    for (i = 0; i < 4; i++) 
+        bksmt_unpackbe64(ctx->hash[i], ret + i * 8); 
+}
+
+void 
+bksmt_sha512t224_ctx_finish(struct bksmt_sha512_ctx *ctx, unsigned char ret[28])
+{
+    int i;
+    unsigned char tmpstr[8];
+
+
+    sha512_ctx_pad(ctx);
+
+    for (i = 0; i < 3; i++) 
+        bksmt_unpackbe64(ctx->hash[i], ret + i * 8); 
+    bksmt_unpackbe64(ctx->hash[3], tmpstr);
+
+    memcpy(ret + 24, tmpstr, 4);
+}
+
+void 
+bksmt_sha384_ctx_init(struct bksmt_sha512_ctx *ctx)
+{
+    uint64_t hash[8] = SHA384_INIT;
+    ctx->len = 0;
+    ctx->aib = 0;
+    memcpy(ctx->hash, hash, 8 * sizeof(hash[0]));
+    memset(ctx->blk, 0, 128 * sizeof(ctx->blk[0]));
+}
+
+void 
+bksmt_sha512t256_ctx_init(struct bksmt_sha512_ctx *ctx)
+{
+    uint64_t hash[8] = SHA512256_INIT;
+    ctx->len = 0;
+    ctx->aib = 0;
+    memcpy(ctx->hash, hash, 8 * sizeof(hash[0]));
+    memset(ctx->blk, 0, 128 * sizeof(ctx->blk[0]));
+}
+
+void 
+bksmt_sha512t224_ctx_init(struct bksmt_sha512_ctx *ctx)
+{
+    uint64_t hash[8] = SHA512224_INIT;
+    ctx->len = 0;
+    ctx->aib = 0;
+    memcpy(ctx->hash, hash, 8 * sizeof(hash[0]));
+    memset(ctx->blk, 0, 128 * sizeof(ctx->blk[0]));
+}
+
+void 
+bksmt_sha512_ctx_init(struct bksmt_sha512_ctx *ctx)
+{
+    uint64_t hash[8] = SHA512_INIT;
+    ctx->len = 0;
+    ctx->aib = 0;
+    memcpy(ctx->hash, hash, 8 * sizeof(hash[0]));
+    memset(ctx->blk, 0, 128 * sizeof(ctx->blk[0]));
+}
+
+void 
+bksmt_sha512_ctx_hash(struct bksmt_sha512_ctx *ctx, unsigned char *buf, uint64_t len)
+{
+    sha512_ctx_hash(ctx, buf, len);
+}
+
+
+void 
+bksmt_sha384_ctx_hash(struct bksmt_sha512_ctx *ctx, unsigned char *buf, uint64_t len)
+{
+    sha512_ctx_hash(ctx, buf, len);
+}
+
+void 
+bksmt_sha512t256_ctx_hash(struct bksmt_sha512_ctx *ctx, unsigned char *buf, uint64_t len)
+{
+    sha512_ctx_hash(ctx, buf, len);
+}
+
+void 
+bksmt_sha512t224_ctx_hash(struct bksmt_sha512_ctx *ctx, unsigned char *buf, uint64_t len)
+{
+    sha512_ctx_hash(ctx, buf, len);
+}
+
+void 
 bksmt_sha256_ctx_hash(struct bksmt_sha256_ctx *ctx, unsigned char *buf, uint64_t len)
 {
     sha256_ctx_hash(ctx, buf, len);
@@ -622,6 +739,94 @@ sha256_ctx_pad(struct bksmt_sha256_ctx *ctx)
         sha256_work_round(ctx->hash, ctx->blk);
         sha256_work_round(ctx->hash, sblk);
     }
+}
+
+static void 
+sha512_ctx_pad(struct bksmt_sha512_ctx *ctx)
+{
+    uint64_t blen;
+    unsigned char sblk[128];
+
+    /* length in bits */
+    blen = ctx->len * 8;
+
+    /* zero out end of glue block */
+    memset(ctx->blk + ctx->aib + 1, 0, 127 - ctx->aib);
+    /* add single one to end */
+    ctx->blk[ctx->aib] = 0x80; 
+
+    /* here we write the bit length of the message to the end of the glue block,
+     * or generate another terminal block if theres not enough room 
+     */
+    if (ctx->aib < 112) {
+        /* if we have enough space for the 8 bit block, we only need one pad */
+        bksmt_unpackbe64(blen, ctx->blk + 120); 
+        sha512_work_round(ctx->hash, ctx->blk);
+    } else {
+        /* else, we need a whole new block to put the length in */
+        memset(sblk, 0, 120);
+        bksmt_unpackbe64(blen, sblk + 120); 
+        sha512_work_round(ctx->hash, ctx->blk);
+        sha512_work_round(ctx->hash, sblk);
+    }
+}
+
+static void
+sha512_ctx_hash(struct bksmt_sha512_ctx *ctx, unsigned char *buf, uint64_t len)
+{
+    uint64_t i, blklen, extralen, off, paib;
+
+    /* add buffer byte length to total byte length */
+    ctx->len += len;
+
+    /* handle message gluing */
+
+    /* set offset to zero. this tracks how much of the start
+     * block we have to attach to the last few bytes of the last
+     * buffer to make a glue block 
+     */
+    off = 0;
+    if (ctx->aib > 0) {
+        /* if the length is not enough to fill the glue block, copy it in, add
+         * length to the aib counter and return 
+         */
+        if (len < 128 - ctx->aib) {
+            memcpy(ctx->blk + ctx->aib, buf, len);  
+            ctx->aib += len;
+            return;
+        }
+
+        /* if we reach here we have enough to fill the glue block, so write in the rest
+         * and add it to the hash 
+         */ 
+        memcpy(ctx->blk + ctx->aib, buf, 128 - ctx->aib);  
+        sha512_work_round(ctx->hash, ctx->blk);
+
+        /* paib stores the previous aib counter since we need to zero it out but
+         * also make decisions with the last value 
+         */ 
+        paib = ctx->aib;
+        ctx->aib = 0;
+        /* if we used all of our buffer to make the glue block, we are done */
+        if (len == 128 - paib) return; 
+        /* else, we need to start processing blocks at an offset of what was used to
+         * make the glue block 
+         */
+        off = 64 - paib;
+    }
+
+    /* calculate the amount of blocks and extra */
+    blklen = (len - off) / 128;
+    extralen = (len - off) % 128;
+
+    /* add full block lengths to the hash */
+    for (i = 0; i < blklen; i++)
+        sha512_work_round(ctx->hash, buf + off + i * 128);
+
+    /* copy extra into the glue block store. this gets handled either when another ctx_hash call 
+     * fills the glue block or when a ctx_finish call occurs */
+    memcpy(ctx->blk, buf + off + blklen * 128, extralen);
+    ctx->aib = extralen;
 }
 
 static void

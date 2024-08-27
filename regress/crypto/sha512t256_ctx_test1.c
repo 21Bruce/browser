@@ -1,0 +1,62 @@
+#include "../../crypto/sha.h"
+
+#include <string.h>
+
+int
+main(void)
+{
+    struct bksmt_sha512_ctx ctx;
+    char test1[43] = "The quick brown fox jumps over the lazy dog";     
+    unsigned char res1[32];
+    unsigned char res1ch[32] = { 0xdd, 0x9d, 0x67, 0xb3, 0x71, 0x51, 0x9c, 0x33, 0x9e, 0xd8, 0xdb, 0xd2, 0x5a, 0xf9, 0x0e, 0x97, 0x6a, 0x1e, 0xee, 0xfd, 0x4a, 0xd3, 0xd8, 0x89, 0x00, 0x5e, 0x53, 0x2f, 0xc5, 0xbe, 0xf0, 0x4d };
+
+    bksmt_sha512t256_ctx_init(&ctx);
+    bksmt_sha512t256_ctx_hash(&ctx, test1, 43);
+    bksmt_sha512t256_ctx_finish(&ctx, res1);
+
+    if (memcmp(res1, res1ch, 32) != 0)
+        return 1;
+
+    bksmt_sha512t256_ctx_init(&ctx);
+    bksmt_sha512t256_ctx_hash(&ctx, test1, 20);
+    bksmt_sha512t256_ctx_hash(&ctx, test1 + 20, 23);
+    bksmt_sha512t256_ctx_finish(&ctx, res1);
+
+    if (memcmp(res1, res1ch, 32) != 0)
+        return 2;
+
+    char test2[178] = "dkjfsakfjdfsdfkjsdfkdsjfkdsjkfjwdkfwjokfnwefndwonvdojvnnw;rfen2ofndfkndvnwfoiewfnewklkcnxsiovjoweefiewklfnda;sfnw;lgnro3rhgioq3r;gnlkdvoqirvljkbwnofi;jleqwm,bdfn2oe;iljfn;oqiewnf";     
+    unsigned char res2[32];
+    unsigned char res2ch[32] = { 0x93, 0x1b, 0xec, 0x05, 0xc8, 0xfc, 0x84, 0x86, 0xa3, 0x62, 0x7e, 0xd3, 0x06, 0x21, 0x6e, 0x4d, 0x71, 0xac, 0x69, 0x0c, 0x98, 0xca, 0x54, 0xd2, 0xc7, 0x13, 0xc9, 0x56, 0x3b, 0x2e, 0x81, 0x30 };
+
+    bksmt_sha512t256_ctx_init(&ctx);
+    bksmt_sha512t256_ctx_hash(&ctx, test2, 178);
+    bksmt_sha512t256_ctx_finish(&ctx, res2);
+
+    if (memcmp(res2, res2ch, 32) != 0)
+        return 3;
+
+    bksmt_sha512t256_ctx_init(&ctx);
+    bksmt_sha512t256_ctx_hash(&ctx, test2, 128);
+    bksmt_sha512t256_ctx_hash(&ctx, test2 + 128, 1);
+    bksmt_sha512t256_ctx_hash(&ctx, test2 + 129, 1);
+    bksmt_sha512t256_ctx_hash(&ctx, test2 + 130, 48);
+    bksmt_sha512t256_ctx_finish(&ctx, res2);
+
+    if (memcmp(res2, res2ch, 32) != 0)
+        return 4;
+
+    char test3[128] = "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678";
+    unsigned char res3[32];
+    unsigned char res3ch[32] = { 0x81, 0x03, 0xd6, 0x9a, 0x71, 0xc3, 0xfc, 0x5d, 0x5f, 0x38, 0x5c, 0x40, 0x7a, 0x53, 0x12, 0x93, 0x20, 0xed, 0x48, 0x39, 0xc5, 0x5a, 0x38, 0x95, 0xf2, 0x2f, 0xd1, 0x91, 0x99, 0xc3, 0xc3, 0xa0 };
+
+    bksmt_sha512t256_ctx_init(&ctx);
+    bksmt_sha512t256_ctx_hash(&ctx, test3, 128);
+    bksmt_sha512t256_ctx_finish(&ctx, res3);
+
+    if (memcmp(res3, res3ch, 32) != 0)
+        return 5;
+
+
+    return 0;
+}
