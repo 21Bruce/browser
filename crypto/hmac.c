@@ -333,7 +333,7 @@ bksmt_sha384_hmac_ctx_append(struct bksmt_sha512_hmac_ctx *ctx, unsigned char *b
 void 
 bksmt_sha512t224_hmac_ctx_append(struct bksmt_sha512_hmac_ctx *ctx, unsigned char *buf, uint64_t len)
 {
-    bksmt_sha384_ctx_hash(&ctx->sctx, buf, len); 
+    bksmt_sha512t224_ctx_hash(&ctx->sctx, buf, len); 
 }
 
 void 
