@@ -99,6 +99,66 @@
 static void byte_xor(unsigned char *, unsigned char *, uint64_t, unsigned char *);
 
 void 
+bksmt_sha256_hmac(unsigned char *key, uint64_t klen, unsigned char *buf, uint64_t len, unsigned char ret[32])
+{
+    struct bksmt_sha256_hmac_ctx ctx;
+
+    bksmt_sha256_hmac_ctx_init(&ctx, key, klen);
+    bksmt_sha256_hmac_ctx_append(&ctx, buf, len);
+    bksmt_sha256_hmac_ctx_finish(&ctx, ret);
+}
+
+void 
+bksmt_sha224_hmac(unsigned char *key, uint64_t klen, unsigned char *buf, uint64_t len, unsigned char ret[28])
+{
+    struct bksmt_sha256_hmac_ctx ctx;
+
+    bksmt_sha224_hmac_ctx_init(&ctx, key, klen);
+    bksmt_sha224_hmac_ctx_append(&ctx, buf, len);
+    bksmt_sha224_hmac_ctx_finish(&ctx, ret);
+}
+
+void 
+bksmt_sha512_hmac(unsigned char *key, uint64_t klen, unsigned char *buf, uint64_t len, unsigned char ret[64])
+{
+    struct bksmt_sha512_hmac_ctx ctx;
+
+    bksmt_sha512_hmac_ctx_init(&ctx, key, klen);
+    bksmt_sha512_hmac_ctx_append(&ctx, buf, len);
+    bksmt_sha512_hmac_ctx_finish(&ctx, ret);
+}
+
+void 
+bksmt_sha384_hmac(unsigned char *key, uint64_t klen, unsigned char *buf, uint64_t len, unsigned char ret[48])
+{
+    struct bksmt_sha512_hmac_ctx ctx;
+
+    bksmt_sha384_hmac_ctx_init(&ctx, key, klen);
+    bksmt_sha384_hmac_ctx_append(&ctx, buf, len);
+    bksmt_sha384_hmac_ctx_finish(&ctx, ret);
+}
+
+void 
+bksmt_sha512t224_hmac(unsigned char *key, uint64_t klen, unsigned char *buf, uint64_t len, unsigned char ret[28])
+{
+    struct bksmt_sha512_hmac_ctx ctx;
+
+    bksmt_sha512t224_hmac_ctx_init(&ctx, key, klen);
+    bksmt_sha512t224_hmac_ctx_append(&ctx, buf, len);
+    bksmt_sha512t224_hmac_ctx_finish(&ctx, ret);
+}
+
+void 
+bksmt_sha512t256_hmac(unsigned char *key, uint64_t klen, unsigned char *buf, uint64_t len, unsigned char ret[32])
+{
+    struct bksmt_sha512_hmac_ctx ctx;
+
+    bksmt_sha512t256_hmac_ctx_init(&ctx, key, klen);
+    bksmt_sha512t256_hmac_ctx_append(&ctx, buf, len);
+    bksmt_sha512t256_hmac_ctx_finish(&ctx, ret);
+}
+
+void 
 bksmt_sha256_hmac_ctx_init(struct bksmt_sha256_hmac_ctx *ctx, unsigned char *key, uint64_t klen) 
 {
     unsigned char khash[32], kipad[64] = HMAC_IPAD_64, kopad[64] = HMAC_OPAD_64;
