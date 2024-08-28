@@ -172,11 +172,11 @@ bksmt_sha256_hmac_ctx_init(struct bksmt_sha256_hmac_ctx *ctx, unsigned char *key
         bksmt_sha256(key, klen, khash);
         byte_xor(khash, kipad, 32, kipad);
         byte_xor(khash, kopad, 32, ctx->opad);
-        memcpy(ctx->opad, kopad, 64);
+        memcpy(ctx->opad + 32, kopad + 32, 32);
     } else {
         byte_xor(key, kipad, klen, kipad);
-        byte_xor(key, kopad, klen, kopad);
-        memcpy(ctx->opad, kopad, 64);
+        byte_xor(key, kopad, klen, ctx->opad);
+        memcpy(ctx->opad + klen, kopad + klen, 64 - klen);
     }
 
     /* RFC 2104: hash padded key */
@@ -197,11 +197,11 @@ bksmt_sha224_hmac_ctx_init(struct bksmt_sha256_hmac_ctx *ctx, unsigned char *key
         bksmt_sha224(key, klen, khash);
         byte_xor(khash, kipad, 28, kipad);
         byte_xor(khash, kopad, 28, ctx->opad);
-        memcpy(ctx->opad, kopad, 64);
+        memcpy(ctx->opad + 28, kopad + 28, 36);
     } else {
         byte_xor(key, kipad, klen, kipad);
-        byte_xor(key, kopad, klen, kopad);
-        memcpy(ctx->opad, kopad, 64);
+        byte_xor(key, kopad, klen, ctx->opad);
+        memcpy(ctx->opad + klen, kopad + klen, 64 - klen);
     }
 
     /* RFC 2104: hash padded key */
@@ -222,11 +222,11 @@ bksmt_sha512_hmac_ctx_init(struct bksmt_sha512_hmac_ctx *ctx, unsigned char *key
         bksmt_sha384(key, klen, khash);
         byte_xor(khash, kipad, 64, kipad);
         byte_xor(khash, kopad, 64, ctx->opad);
-        memcpy(ctx->opad, kopad, 128);
+        memcpy(ctx->opad + 64, kopad + 64, 64);
     } else {
         byte_xor(key, kipad, klen, kipad);
-        byte_xor(key, kopad, klen, kopad);
-        memcpy(ctx->opad, kopad, 128);
+        byte_xor(key, kopad, klen, ctx->opad);
+        memcpy(ctx->opad + klen, kopad + klen, 128 - klen);
     }
 
     /* RFC 2104: hash padded key */
@@ -247,11 +247,11 @@ bksmt_sha384_hmac_ctx_init(struct bksmt_sha512_hmac_ctx *ctx, unsigned char *key
         bksmt_sha384(key, klen, khash);
         byte_xor(khash, kipad, 48, kipad);
         byte_xor(khash, kopad, 48, ctx->opad);
-        memcpy(ctx->opad, kopad, 128);
+        memcpy(ctx->opad + 48, kopad + 48, 80);
     } else {
         byte_xor(key, kipad, klen, kipad);
-        byte_xor(key, kopad, klen, kopad);
-        memcpy(ctx->opad, kopad, 128);
+        byte_xor(key, kopad, klen, ctx->opad);
+        memcpy(ctx->opad + klen, kopad + klen, 128 - klen);
     }
 
     /* RFC 2104: hash padded key */
@@ -272,11 +272,11 @@ bksmt_sha512t224_hmac_ctx_init(struct bksmt_sha512_hmac_ctx *ctx, unsigned char 
         bksmt_sha512t224(key, klen, khash);
         byte_xor(khash, kipad, 28, kipad);
         byte_xor(khash, kopad, 28, ctx->opad);
-        memcpy(ctx->opad, kopad, 128);
+        memcpy(ctx->opad + 28, kopad + 28, 100);
     } else {
         byte_xor(key, kipad, klen, kipad);
-        byte_xor(key, kopad, klen, kopad);
-        memcpy(ctx->opad, kopad, 128);
+        byte_xor(key, kopad, klen, ctx->opad);
+        memcpy(ctx->opad + klen, kopad + klen, 128 - klen);
     }
 
     /* RFC 2104: hash padded key */
@@ -297,11 +297,11 @@ bksmt_sha512t256_hmac_ctx_init(struct bksmt_sha512_hmac_ctx *ctx, unsigned char 
         bksmt_sha512t256(key, klen, khash);
         byte_xor(khash, kipad, 32, kipad);
         byte_xor(khash, kopad, 32, ctx->opad);
-        memcpy(ctx->opad, kopad, 128);
+        memcpy(ctx->opad + 32, kopad + 32, 96);
     } else {
         byte_xor(key, kipad, klen, kipad);
-        byte_xor(key, kopad, klen, kopad);
-        memcpy(ctx->opad, kopad, 128);
+        byte_xor(key, kopad, klen, ctx->opad);
+        memcpy(ctx->opad + klen, kopad + klen, 128 - klen);
     }
     bksmt_sha512t256_ctx_hash(&ctx->sctx, kipad, 128); 
 }
