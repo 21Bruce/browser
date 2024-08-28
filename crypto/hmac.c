@@ -219,7 +219,7 @@ bksmt_sha512_hmac_ctx_init(struct bksmt_sha512_hmac_ctx *ctx, unsigned char *key
     /* RFC 2104: xoring ipad to key */
     if (klen > 128) { 
         /* RFC 2104: if key len > block size, must hash down */
-        bksmt_sha384(key, klen, khash);
+        bksmt_sha512(key, klen, khash);
         byte_xor(khash, kipad, 64, kipad);
         byte_xor(khash, kopad, 64, ctx->opad);
         memcpy(ctx->opad + 64, kopad + 64, 64);
