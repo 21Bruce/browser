@@ -358,20 +358,20 @@ static void sha256_w_gen(uint32_t[65], unsigned char [64]);
 
 static void sha512_w_gen(uint64_t [80], unsigned char [128]);
 
-static void sha256_pad_gen(unsigned char *, uint64_t, unsigned char[64], unsigned char[64], uint64_t *);
-
 static void sha256_work_round(uint32_t [8], unsigned char [64]);
 
-static void sha512_pad_gen(unsigned char *, uint64_t, unsigned char[128], unsigned char[128], uint64_t *);
+static void sha256_pad(unsigned char *, uint64_t, unsigned char[64], unsigned char[64], uint64_t *);
 
-static void sha256_hash_gen(unsigned char *, uint64_t, uint32_t [8]);
+static void sha512_pad(unsigned char *, uint64_t, unsigned char[128], unsigned char[128], uint64_t *);
 
-static void sha512_hash_gen(unsigned char *, uint64_t, uint64_t [8]);
+static void sha256_hash(unsigned char *, uint64_t, uint32_t [8]);
+
+static void sha512_hash(unsigned char *, uint64_t, uint64_t [8]);
 
 static void sha512_work_round(uint64_t [8], unsigned char [128]);
  
 static void 
-sha256_pad_gen(unsigned char *src, uint64_t len, unsigned char opad1[64], unsigned char opad2[64], uint64_t *blkf)
+sha256_pad(unsigned char *src, uint64_t len, unsigned char opad1[64], unsigned char opad2[64], uint64_t *blkf)
 {
     uint64_t blks, extra, blen;
 
@@ -401,7 +401,7 @@ sha256_pad_gen(unsigned char *src, uint64_t len, unsigned char opad1[64], unsign
 }
 
 static void 
-sha512_pad_gen(unsigned char *src, uint64_t len, unsigned char opad1[128], unsigned char opad2[128], uint64_t *blkf )
+sha512_pad(unsigned char *src, uint64_t len, unsigned char opad1[128], unsigned char opad2[128], uint64_t *blkf )
 {
     uint64_t blks, extra, blen;
 
@@ -440,7 +440,7 @@ bksmt_sha1(unsigned char *src, uint64_t len, unsigned char ret[20])
     blks = len / 64;
 
     /* generate extra pad block */
-    sha256_pad_gen(src, len, opad1, opad2, &blkf);
+    sha256_pad(src, len, opad1, opad2, &blkf);
 
     /* iterate through 512-bit chunks of message */
     for(i = 0; i < blkf; i++) {
@@ -507,7 +507,7 @@ bksmt_sha256(unsigned char *src, uint64_t len, unsigned char ret[32])
     uint64_t i;
     uint32_t hash[8] = SHA256_INIT;
 
-    sha256_hash_gen(src, len, hash);
+    sha256_hash(src, len, hash);
 
     for (i = 0; i < 8; i++) 
         bksmt_unpackbe32(hash[i], ret + i * 4); 
@@ -519,21 +519,21 @@ bksmt_sha224(unsigned char *src, uint64_t len, unsigned char ret[28])
     uint32_t hash[8] = SHA224_INIT;
     uint64_t i;
 
-    sha256_hash_gen(src, len, hash);
+    sha256_hash(src, len, hash);
 
     for (i = 0; i < 7; i++) 
         bksmt_unpackbe32(hash[i], ret + i * 4); 
 }
 
 static void 
-sha256_hash_gen(unsigned char *src, uint64_t len, uint32_t hash[8])
+sha256_hash(unsigned char *src, uint64_t len, uint32_t hash[8])
 {
     uint64_t blks, i, extra, blen, blkf;
     unsigned char opad1[64], opad2[64];
 
     blks = len / 64;
 
-    sha256_pad_gen(src, len, opad1, opad2, &blkf);
+    sha256_pad(src, len, opad1, opad2, &blkf);
 
     /* iterate through 512-bit chunks of message */
     for(i = 0; i < blks; i++) 
@@ -936,7 +936,7 @@ bksmt_sha512(unsigned char *src, uint64_t len, unsigned char ret[64])
 {
     uint64_t i, hash[8] = SHA512_INIT;
 
-    sha512_hash_gen(src, len, hash);
+    sha512_hash(src, len, hash);
 
     for (i = 0; i < 8; i++) 
         bksmt_unpackbe64(hash[i], ret + i * 8); 
@@ -947,7 +947,7 @@ bksmt_sha384(unsigned char *src, uint64_t len, unsigned char ret[48])
 {
     uint64_t i, hash[8] = SHA384_INIT;
 
-    sha512_hash_gen(src, len, hash);
+    sha512_hash(src, len, hash);
 
     for (i = 0; i < 6; i++) 
         bksmt_unpackbe64(hash[i], ret + i * 8); 
@@ -959,7 +959,7 @@ bksmt_sha512t224(unsigned char *src, uint64_t len, unsigned char ret[28])
     uint64_t i, hash[8] = SHA512224_INIT;
     unsigned char tmpstr[8];
 
-    sha512_hash_gen(src, len, hash);
+    sha512_hash(src, len, hash);
 
     for (i = 0; i < 3; i++) 
         bksmt_unpackbe64(hash[i], ret + i * 8); 
@@ -973,7 +973,7 @@ bksmt_sha512t256(unsigned char *src, uint64_t len, unsigned char ret[32])
 {
     uint64_t i, hash[8] = SHA512256_INIT;
 
-    sha512_hash_gen(src, len, hash);
+    sha512_hash(src, len, hash);
 
     for (i = 0; i < 4; i++) 
         bksmt_unpackbe64(hash[i], ret + i * 8); 
@@ -981,14 +981,14 @@ bksmt_sha512t256(unsigned char *src, uint64_t len, unsigned char ret[32])
 }
 
 static void 
-sha512_hash_gen(unsigned char *src, uint64_t len, uint64_t hash[8])
+sha512_hash(unsigned char *src, uint64_t len, uint64_t hash[8])
 {
     uint64_t work[8], w[80], tmp1, tmp2, blks, i, t, extra, blen, blkf;
     unsigned char opad1[128], opad2[128];
 
     blks = len / 128;
 
-    sha512_pad_gen(src, len, opad1, opad2, &blkf);
+    sha512_pad(src, len, opad1, opad2, &blkf);
 
     /* iterate through 1024-bit chunks of message */
     for(i = 0; i < blks; i++) 
