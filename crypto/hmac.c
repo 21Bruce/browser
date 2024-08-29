@@ -398,7 +398,7 @@ bksmt_sha384_hmac_ctx_finish(struct bksmt_sha512_hmac_ctx *ctx, unsigned char re
     /* reinit the hash ctx to hash the opad concat with previous hash */
     bksmt_sha384_ctx_init(&ctx->sctx);
     bksmt_sha384_ctx_hash(&ctx->sctx, ctx->opad, 128);
-    bksmt_sha384_ctx_hash(&ctx->sctx, fhash, 64);
+    bksmt_sha384_ctx_hash(&ctx->sctx, fhash, 48);
     /* output the hmac */
     bksmt_sha384_ctx_finish(&ctx->sctx, ret);
 }
