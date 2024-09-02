@@ -1,7 +1,9 @@
 #include "hkdf.h"
 #include "hmac.h"
+#include "../lib/math.h"
 
 #include <string.h>
+#include <assert.h>
 
 void 
 bksmt_sha256_hkdf_extract_ctx_init(struct bksmt_sha256_hkdf_extract_ctx *ctx, unsigned char *salt, uint64_t saltlen)
@@ -147,4 +149,42 @@ bksmt_sha512t256_hkdf_extract_ctx_finish(struct bksmt_sha512_hkdf_extract_ctx *c
     bksmt_sha512t256_hmac_ctx_finish(&ctx->hmctx, ret);
 }
 
+
+void 
+bksmt_sha256_hkdf_expand(unsigned char prk[32], uint64_t prklen, unsigned char *info, uint64_t infolen, unsigned char *out, uint64_t outlen)
+{
+    struct bksmt_sha256_hmac_ctx ctx;
+    uint64_t n, i, extra;
+    unsigned char thash[32], incbuf;
+
+    n = outlen / 32;
+    extra = outlen - n*32;    
+
+    incbuf = 1;
+    bksmt_sha256_hmac_ctx_init(&ctx, prk, prklen);
+    bksmt_sha256_hmac_ctx_append(&ctx, info, infolen);
+    bksmt_sha256_hmac_ctx_append(&ctx, &incbuf, 1);
+    bksmt_sha256_hmac_ctx_finish(&ctx, out);
+
+    for (i = 1; i < n; i++) {
+        incbuf++;
+        bksmt_sha256_hmac_ctx_init(&ctx, prk, prklen);
+        bksmt_sha256_hmac_ctx_append(&ctx, out + (i-1)*32, 32);
+        bksmt_sha256_hmac_ctx_append(&ctx, info, infolen);
+        bksmt_sha256_hmac_ctx_append(&ctx, &incbuf, 1);
+        bksmt_sha256_hmac_ctx_finish(&ctx, out + i*32);
+    }
+
+    if (extra != 0) {
+        incbuf++;
+        bksmt_sha256_hmac_ctx_init(&ctx, prk, prklen);
+        bksmt_sha256_hmac_ctx_append(&ctx, out + (i-1)*32, 32);
+        bksmt_sha256_hmac_ctx_append(&ctx, info, infolen);
+        bksmt_sha256_hmac_ctx_append(&ctx, &incbuf, 1);
+        bksmt_sha256_hmac_ctx_finish(&ctx, thash);
+
+        memcpy(out + i * 32, thash, extra);
+    }
+ 
+}
 
