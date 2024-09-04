@@ -188,3 +188,41 @@ bksmt_sha256_hkdf_expand(unsigned char prk[32], uint64_t prklen, unsigned char *
  
 }
 
+
+void 
+bksmt_sha512_hkdf_expand(unsigned char prk[64], uint64_t prklen, unsigned char *info, uint64_t infolen, unsigned char *out, uint64_t outlen)
+{
+    struct bksmt_sha512_hmac_ctx ctx;
+    uint64_t n, i, extra;
+    unsigned char thash[64], incbuf;
+
+    n = outlen / 64;
+    extra = outlen - n*64;    
+
+    incbuf = 1;
+    bksmt_sha512_hmac_ctx_init(&ctx, prk, prklen);
+    bksmt_sha512_hmac_ctx_append(&ctx, info, infolen);
+    bksmt_sha512_hmac_ctx_append(&ctx, &incbuf, 1);
+    bksmt_sha512_hmac_ctx_finish(&ctx, out);
+
+    for (i = 1; i < n; i++) {
+        incbuf++;
+        bksmt_sha512_hmac_ctx_init(&ctx, prk, prklen);
+        bksmt_sha512_hmac_ctx_append(&ctx, out + (i-1)*64, 64);
+        bksmt_sha512_hmac_ctx_append(&ctx, info, infolen);
+        bksmt_sha512_hmac_ctx_append(&ctx, &incbuf, 1);
+        bksmt_sha512_hmac_ctx_finish(&ctx, out + i*64);
+    }
+
+    if (extra != 0) {
+        incbuf++;
+        bksmt_sha256_hmac_ctx_init(&ctx, prk, prklen);
+        bksmt_sha256_hmac_ctx_append(&ctx, out + (i-1)*64, 64);
+        bksmt_sha256_hmac_ctx_append(&ctx, info, infolen);
+        bksmt_sha256_hmac_ctx_append(&ctx, &incbuf, 1);
+        bksmt_sha256_hmac_ctx_finish(&ctx, thash);
+
+        memcpy(out + i * 64, thash, extra);
+    }
+}
+
