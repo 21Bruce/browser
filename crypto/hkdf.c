@@ -188,6 +188,43 @@ bksmt_sha256_hkdf_expand(unsigned char prk[32], uint64_t prklen, unsigned char *
  
 }
 
+void 
+bksmt_sha224_hkdf_expand(unsigned char prk[28], uint64_t prklen, unsigned char *info, uint64_t infolen, unsigned char *out, uint64_t outlen)
+{
+    struct bksmt_sha256_hmac_ctx ctx;
+    uint64_t n, i, extra;
+    unsigned char thash[28], incbuf;
+
+    n = outlen / 28;
+    extra = outlen - n*28;    
+
+    incbuf = 1;
+    bksmt_sha224_hmac_ctx_init(&ctx, prk, prklen);
+    bksmt_sha224_hmac_ctx_append(&ctx, info, infolen);
+    bksmt_sha224_hmac_ctx_append(&ctx, &incbuf, 1);
+    bksmt_sha224_hmac_ctx_finish(&ctx, out);
+
+    for (i = 1; i < n; i++) {
+        incbuf++;
+        bksmt_sha224_hmac_ctx_init(&ctx, prk, prklen);
+        bksmt_sha224_hmac_ctx_append(&ctx, out + (i-1)*28, 28);
+        bksmt_sha224_hmac_ctx_append(&ctx, info, infolen);
+        bksmt_sha224_hmac_ctx_append(&ctx, &incbuf, 1);
+        bksmt_sha224_hmac_ctx_finish(&ctx, out + i*28);
+    }
+
+    if (extra != 0) {
+        incbuf++;
+        bksmt_sha224_hmac_ctx_init(&ctx, prk, prklen);
+        bksmt_sha224_hmac_ctx_append(&ctx, out + (i-1)*28, 28);
+        bksmt_sha224_hmac_ctx_append(&ctx, info, infolen);
+        bksmt_sha224_hmac_ctx_append(&ctx, &incbuf, 1);
+        bksmt_sha224_hmac_ctx_finish(&ctx, thash);
+
+        memcpy(out + i * 28, thash, extra);
+    }
+}
+
 
 void 
 bksmt_sha512_hkdf_expand(unsigned char prk[64], uint64_t prklen, unsigned char *info, uint64_t infolen, unsigned char *out, uint64_t outlen)
@@ -216,13 +253,128 @@ bksmt_sha512_hkdf_expand(unsigned char prk[64], uint64_t prklen, unsigned char *
 
     if (extra != 0) {
         incbuf++;
-        bksmt_sha256_hmac_ctx_init(&ctx, prk, prklen);
-        bksmt_sha256_hmac_ctx_append(&ctx, out + (i-1)*64, 64);
-        bksmt_sha256_hmac_ctx_append(&ctx, info, infolen);
-        bksmt_sha256_hmac_ctx_append(&ctx, &incbuf, 1);
-        bksmt_sha256_hmac_ctx_finish(&ctx, thash);
+        bksmt_sha512_hmac_ctx_init(&ctx, prk, prklen);
+        bksmt_sha512_hmac_ctx_append(&ctx, out + (i-1)*64, 64);
+        bksmt_sha512_hmac_ctx_append(&ctx, info, infolen);
+        bksmt_sha512_hmac_ctx_append(&ctx, &incbuf, 1);
+        bksmt_sha512_hmac_ctx_finish(&ctx, thash);
 
         memcpy(out + i * 64, thash, extra);
     }
 }
+
+void 
+bksmt_sha384_hkdf_expand(unsigned char prk[48], uint64_t prklen, unsigned char *info, uint64_t infolen, unsigned char *out, uint64_t outlen)
+{
+    struct bksmt_sha512_hmac_ctx ctx;
+    uint64_t n, i, extra;
+    unsigned char thash[48], incbuf;
+
+    n = outlen / 48;
+    extra = outlen - n*48;    
+
+    incbuf = 1;
+    bksmt_sha384_hmac_ctx_init(&ctx, prk, prklen);
+    bksmt_sha384_hmac_ctx_append(&ctx, info, infolen);
+    bksmt_sha384_hmac_ctx_append(&ctx, &incbuf, 1);
+    bksmt_sha384_hmac_ctx_finish(&ctx, out);
+
+    for (i = 1; i < n; i++) {
+        incbuf++;
+        bksmt_sha384_hmac_ctx_init(&ctx, prk, prklen);
+        bksmt_sha384_hmac_ctx_append(&ctx, out + (i-1)*48, 48);
+        bksmt_sha384_hmac_ctx_append(&ctx, info, infolen);
+        bksmt_sha384_hmac_ctx_append(&ctx, &incbuf, 1);
+        bksmt_sha384_hmac_ctx_finish(&ctx, out + i*48);
+    }
+
+    if (extra != 0) {
+        incbuf++;
+        bksmt_sha384_hmac_ctx_init(&ctx, prk, prklen);
+        bksmt_sha384_hmac_ctx_append(&ctx, out + (i-1)*48, 48);
+        bksmt_sha384_hmac_ctx_append(&ctx, info, infolen);
+        bksmt_sha384_hmac_ctx_append(&ctx, &incbuf, 1);
+        bksmt_sha384_hmac_ctx_finish(&ctx, thash);
+
+        memcpy(out + i * 48, thash, extra);
+    }
+}
+
+void 
+bksmt_sha512t224_hkdf_expand(unsigned char prk[28], uint64_t prklen, unsigned char *info, uint64_t infolen, unsigned char *out, uint64_t outlen)
+{
+    struct bksmt_sha512_hmac_ctx ctx;
+    uint64_t n, i, extra;
+    unsigned char thash[28], incbuf;
+
+    n = outlen / 28;
+    extra = outlen - n*28;    
+
+    incbuf = 1;
+    bksmt_sha512t224_hmac_ctx_init(&ctx, prk, prklen);
+    bksmt_sha512t224_hmac_ctx_append(&ctx, info, infolen);
+    bksmt_sha512t224_hmac_ctx_append(&ctx, &incbuf, 1);
+    bksmt_sha512t224_hmac_ctx_finish(&ctx, out);
+
+    for (i = 1; i < n; i++) {
+        incbuf++;
+        bksmt_sha512t224_hmac_ctx_init(&ctx, prk, prklen);
+        bksmt_sha512t224_hmac_ctx_append(&ctx, out + (i-1)*28, 28);
+        bksmt_sha512t224_hmac_ctx_append(&ctx, info, infolen);
+        bksmt_sha512t224_hmac_ctx_append(&ctx, &incbuf, 1);
+        bksmt_sha512t224_hmac_ctx_finish(&ctx, out + i*28);
+    }
+
+    if (extra != 0) {
+        incbuf++;
+        bksmt_sha512t224_hmac_ctx_init(&ctx, prk, prklen);
+        bksmt_sha512t224_hmac_ctx_append(&ctx, out + (i-1)*28, 28);
+        bksmt_sha512t224_hmac_ctx_append(&ctx, info, infolen);
+        bksmt_sha512t224_hmac_ctx_append(&ctx, &incbuf, 1);
+        bksmt_sha512t224_hmac_ctx_finish(&ctx, thash);
+
+        memcpy(out + i * 28, thash, extra);
+    }
+}
+
+
+void 
+bksmt_sha512t256_hkdf_expand(unsigned char prk[32], uint64_t prklen, unsigned char *info, uint64_t infolen, unsigned char *out, uint64_t outlen)
+{
+    struct bksmt_sha512_hmac_ctx ctx;
+    uint64_t n, i, extra;
+    unsigned char thash[32], incbuf;
+
+    n = outlen / 32;
+    extra = outlen - n*32;    
+
+    incbuf = 1;
+    bksmt_sha512t256_hmac_ctx_init(&ctx, prk, prklen);
+    bksmt_sha512t256_hmac_ctx_append(&ctx, info, infolen);
+    bksmt_sha512t256_hmac_ctx_append(&ctx, &incbuf, 1);
+    bksmt_sha512t256_hmac_ctx_finish(&ctx, out);
+
+    for (i = 1; i < n; i++) {
+        incbuf++;
+        bksmt_sha512t256_hmac_ctx_init(&ctx, prk, prklen);
+        bksmt_sha512t256_hmac_ctx_append(&ctx, out + (i-1)*32, 32);
+        bksmt_sha512t256_hmac_ctx_append(&ctx, info, infolen);
+        bksmt_sha512t256_hmac_ctx_append(&ctx, &incbuf, 1);
+        bksmt_sha512t256_hmac_ctx_finish(&ctx, out + i*32);
+    }
+
+    if (extra != 0) {
+        incbuf++;
+        bksmt_sha512t256_hmac_ctx_init(&ctx, prk, prklen);
+        bksmt_sha512t256_hmac_ctx_append(&ctx, out + (i-1)*32, 32);
+        bksmt_sha512t256_hmac_ctx_append(&ctx, info, infolen);
+        bksmt_sha512t256_hmac_ctx_append(&ctx, &incbuf, 1);
+        bksmt_sha512t256_hmac_ctx_finish(&ctx, thash);
+
+        memcpy(out + i * 32, thash, extra);
+    }
+}
+
+
+
 

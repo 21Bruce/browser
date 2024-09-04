@@ -58,7 +58,15 @@ void bksmt_sha512t256_hkdf_extract_ctx_finish(struct bksmt_sha512_hkdf_extract_c
 
 void bksmt_sha256_hkdf_expand(unsigned char [32], uint64_t, unsigned char *, uint64_t, unsigned char *, uint64_t);
 
+void bksmt_sha224_hkdf_expand(unsigned char [28], uint64_t, unsigned char *, uint64_t, unsigned char *, uint64_t);
+
 void bksmt_sha512_hkdf_expand(unsigned char [64], uint64_t, unsigned char *, uint64_t, unsigned char *, uint64_t);
+
+void bksmt_sha384_hkdf_expand(unsigned char [48], uint64_t, unsigned char *, uint64_t, unsigned char *, uint64_t);
+
+void bksmt_sha512t224_hkdf_expand(unsigned char [28], uint64_t, unsigned char *, uint64_t, unsigned char *, uint64_t);
+
+void bksmt_sha512t256_hkdf_expand(unsigned char [32], uint64_t, unsigned char *, uint64_t, unsigned char *, uint64_t);
 
 
 #endif /* __BKSMT_HKDF_H__ */
