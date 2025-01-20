@@ -24,7 +24,7 @@ SUBDIRS != ls -d ${TOPDIR}/*/
 SUBCDIRS:= ${SUBDIRS:N*/regress/}
 
 # get all c files
-TCFILES!= find ./ -name "*.c"
+TCFILES!= ls . | grep ".c" 
 TRUNS:= ${TCFILES:S/.c/-run/g:.//%=%}
 TCNAMES:= ${TCFILES:S/.c//g:.//%=%}
 

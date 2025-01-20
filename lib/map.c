@@ -48,7 +48,7 @@ bksmt_map_regrow(struct bksmt_map *map)
     nxtbuckets = xzallocarray(resize, sizeof *nxtbuckets);
     for(i = 0; i < map->nbuckets; i++) {
         for(csrc = map->buckets[i]; csrc != NULL; csrc = ctmp) {
-            nbidx = djb2_hash(csrc->key) % resize;
+            nbidx = map->khash(csrc->key) % resize;
             cdst = xmalloc(sizeof *cdst);
             cdst->key = csrc->key;
             cdst->val = csrc->val;
