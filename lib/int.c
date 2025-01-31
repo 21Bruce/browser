@@ -6,6 +6,19 @@
 #include "xmalloc.h"
 #include "int.h"
 
+/*
+*    "All the performances of human art, at which we look with praise or wonder, 
+*    are instances of the resistless force of perseverance; it is by this that the 
+*    quarry becomes a pyramid, and that distant countries are united with canals. 
+*    If a man was to compare the single stroke of the pickaxe, or of one impression 
+*    of the spade, with the general design and the last result, he would be overwhelmed by 
+*    the sense of their disproportion; yet those petty operations, incessantly continued, 
+*    in time surmount the greatest difficulties, and mountains are leveled and oceans bounded 
+*    by the slender force of human beings."
+*
+*    - Johnson: Rambler #43 (August 14, 1750)
+*/
+
 /* set the number to the zero representation */
 static void zero_num(struct bksmt_int *);
 
@@ -24,8 +37,11 @@ static void subs_base(struct bksmt_int *, struct bksmt_int *);
 /* sub second's number array from first's number array interpreted as uints, assumes first is larger than second, store in second */
 static void subss_base(struct bksmt_int *, struct bksmt_int *);
 
-/* karatsuba multiply first base and second base arrays, store in first */
-static void ks_muls_base(struct bksmt_int *, struct bksmt_int *);
+/* karatsuba multiply */
+static struct bksmt_int *ks_muls(struct bksmt_int *, struct bksmt_int *);
+
+/* base case multiply */
+static struct bksmt_int *base_muls(struct bksmt_int *, struct bksmt_int *);
 
 struct bksmt_int *
 bksmt_int_init_int(int64_t num)
@@ -232,7 +248,7 @@ adds_base(struct bksmt_int *i1, struct bksmt_int *i2)
 
     carry = 0;
     for(i = 0; i < i1->size; i++) {
-        /* add carry to i2 num, checking if i2 is vitually 0 */
+        /* add carry to i2 num, checking if i2 is virtually 0 */
         storage = carry + ((i >= i2->size) ? 0 : i2->num[i]);
         /* check for carry overflow */
         carry = storage < carry ? 1 : 0; 
@@ -341,7 +357,7 @@ bksmt_int_muls(struct bksmt_int *i1, struct bksmt_int *i2)
 }
 
 static void 
-ks_muls_base(struct bksmt_int *i1, struct bksmt_int *i2) 
+knuth_muls(struct bksmt_int *i1, struct bksmt_int *i2) 
 {
 }
 
@@ -437,8 +453,95 @@ bksmt_int_lshifts(struct bksmt_int *i1, uint64_t shift)
         
     }
 
-
     shrink_num(i1); 
+}
+
+/* assumption: x and y are one digit ints */
+static struct bksmt_int * 
+base_muls(struct bksmt_int *x, struct bksmt_int *y)
+{
+}
+
+static struct bksmt_int * 
+ks_muls(struct bksmt_int *x, struct bksmt_int *y)
+{
+    struct bksmt_int *ret, *xl, *xr, *yl, *yr, *p1, *p2, *p3, *i1, *i2, *i3, *i4, *i5, *i6, *i7;
+    uint64_t nsize;
+
+    /* make nums same even size */
+    if (x->size > y->size) {
+        if (x->size % 2 != 0) {
+            nsize = x->size + 1;
+            expand_num(y, nsize);
+            expand_num(x, nsize);
+        } else {
+            nsize = x->size;
+            expand_num(y, nsize);
+        }
+    } else {
+        if (y->size % 2 != 0) {
+            nsize = y->size + 1;
+            expand_num(x, nsize);
+            expand_num(y, nsize);
+        } else {
+            nsize = y->size;
+            expand_num(x, nsize);
+        }
+    }
+
+    // base case, two one digit ints
+    if (nsize == 1)
+        return base_muls(x, y);
+        
+    /* get lower and upper bit integers */
+    xl = bksmt_int_init_lst(x->num + x->size/2, x->size/2, x->sign);  
+    xr = bksmt_int_init_lst(x->num, x->size/2, x->sign);  
+    yl = bksmt_int_init_lst(y->num + y->size/2, y->size/2, y->sign);  
+    yr = bksmt_int_init_lst(y->num, y->size/2, y->sign);  
+
+    /* first and third terms of ks product, xl*yl and xr*yr */
+    p1 = ks_muls(xl, yl); 
+    p3 = ks_muls(xr, yr); 
+
+    /* second term is (xl + xr)*(yl+yr) - p1 - p3, so requires four intermediary operations */
+    i1 = bksmt_int_add(xl,xr);
+    i2 = bksmt_int_add(yl,yr);
+    i3 = ks_muls(i1, i2);
+    i4 = bksmt_int_sub(i3, p1);
+    p2 = bksmt_int_sub(i4, p3);
+
+    /* shift and add terms, ret = (p1 << size) + (p2 << size/2) + p3 */
+    i5 = bksmt_int_lshift(p1, nsize);
+    i6 = bksmt_int_lshift(p2, nsize/2);
+    i7 = bksmt_int_add(i5, i6);
+    ret = bksmt_int_add(i7, p3);
+
+    /* determine sign, if sign(x) = sign(y), sign(xy) = 1 else sign(xy) = 0 */
+    ret->sign = (x->sign = y->sign) ? BKSMT_INT_POS : BKSMT_INT_NEG;
+
+    /* check for extraneous zeros */
+    shrink_num(ret);
+    shrink_num(x);
+    shrink_num(y);
+
+    /* graveyard */
+    bksmt_int_free(xl);
+    bksmt_int_free(xr);
+    bksmt_int_free(yl);
+    bksmt_int_free(yr);
+    bksmt_int_free(p1);
+    bksmt_int_free(p2);
+    bksmt_int_free(p3);
+    bksmt_int_free(p3);
+    bksmt_int_free(i1);
+    bksmt_int_free(i2);
+    bksmt_int_free(i3);
+    bksmt_int_free(i4);
+    bksmt_int_free(i5);
+    bksmt_int_free(i6);
+    bksmt_int_free(i7);
+
+    return ret;
 }
 
 static void
