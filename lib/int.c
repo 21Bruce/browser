@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
+#include <inttypes.h>
 
 #include "xmalloc.h"
 #include "int.h"
@@ -18,6 +19,9 @@
 *
 *    - Johnson: Rambler #43 (August 14, 1750)
 */
+
+/* print debugging info of a give int */
+static void debug_print_int(struct bksmt_int *);
 
 /* set the number to the zero representation */
 static void zero_num(struct bksmt_int *);
@@ -37,11 +41,11 @@ static void subs_base(struct bksmt_int *, struct bksmt_int *);
 /* sub second's number array from first's number array interpreted as uints, assumes first is larger than second, store in second */
 static void subss_base(struct bksmt_int *, struct bksmt_int *);
 
-/* karatsuba multiply */
-static struct bksmt_int *ks_muls(struct bksmt_int *, struct bksmt_int *);
+/* karatsuba multiply two ints */
+static struct bksmt_int *ks_mul(struct bksmt_int *, struct bksmt_int *);
 
-/* base case multiply */
-static struct bksmt_int *base_muls(struct bksmt_int *, struct bksmt_int *);
+/* one digit multiply, used as a base case for ks_mul */
+static struct bksmt_int *one_digit_mul(struct bksmt_int *, struct bksmt_int *);
 
 struct bksmt_int *
 bksmt_int_init_int(int64_t num)
@@ -343,22 +347,10 @@ subss_base(struct bksmt_int *i1, struct bksmt_int *i2)
 
 }
 
-void 
-bksmt_int_muls(struct bksmt_int *i1, struct bksmt_int *i2)
+struct bksmt_int * 
+bksmt_int_mul(struct bksmt_int *i1, struct bksmt_int *i2)
 {
-    size_t perms;
-
-    /* resulting sign is based on indiv signs */
-    i1->sign *= i2->sign;
-
-    /* # of single digit perms to execute */
-    perms = i1->size * i2->size;
-
-}
-
-static void 
-knuth_muls(struct bksmt_int *i1, struct bksmt_int *i2) 
-{
+    return ks_mul(i1, i2);
 }
 
 void 
@@ -406,6 +398,18 @@ bksmt_int_rshifts(struct bksmt_int *i1, uint64_t shift)
 
     /* reallocate to fit new size */
     i1->num = xrealloc(i1->num, psize * sizeof(i1->num[0]) , i1->size * sizeof(i1->num[0]));
+}
+
+struct bksmt_int * 
+bksmt_int_lshift(struct bksmt_int *i1, uint64_t shift)
+{
+    struct bksmt_int *ret;
+
+    ret = bksmt_int_dup(i1);
+
+    bksmt_int_lshifts(ret, shift);
+
+    return ret;
 }
 
 void 
@@ -458,16 +462,36 @@ bksmt_int_lshifts(struct bksmt_int *i1, uint64_t shift)
 
 /* assumption: x and y are one digit ints */
 static struct bksmt_int * 
-base_muls(struct bksmt_int *x, struct bksmt_int *y)
+one_digit_mul(struct bksmt_int *x, struct bksmt_int *y)
 {
+    struct bksmt_int *ret;
+    uint64_t s[2];
+
+
+    s[0] = x->num[0] * y->num[0];
+
+    
+    if (y->num[0] == 0 || x->num[0] == 0 || y->num[0] == s[0]/x->num[0]) {
+        ret = bksmt_int_init_lst(s, 1, x->sign * y->sign); 
+    } else {
+        s[1] = 1;
+        ret = bksmt_int_init_lst(s, 2, x->sign * y->sign); 
+    }
+
+
+    return ret;
 }
 
 static struct bksmt_int * 
-ks_muls(struct bksmt_int *x, struct bksmt_int *y)
+ks_mul(struct bksmt_int *x, struct bksmt_int *y)
 {
     struct bksmt_int *ret, *xl, *xr, *yl, *yr, *p1, *p2, *p3, *i1, *i2, *i3, *i4, *i5, *i6, *i7;
     uint64_t nsize;
 
+    // base case, two one digit ints
+    if (x->size == 1 && y->size == 1)
+        return one_digit_mul(x, y);
+ 
     /* make nums same even size */
     if (x->size > y->size) {
         if (x->size % 2 != 0) {
@@ -489,10 +513,7 @@ ks_muls(struct bksmt_int *x, struct bksmt_int *y)
         }
     }
 
-    // base case, two one digit ints
-    if (nsize == 1)
-        return base_muls(x, y);
-        
+       
     /* get lower and upper bit integers */
     xl = bksmt_int_init_lst(x->num + x->size/2, x->size/2, x->sign);  
     xr = bksmt_int_init_lst(x->num, x->size/2, x->sign);  
@@ -500,29 +521,32 @@ ks_muls(struct bksmt_int *x, struct bksmt_int *y)
     yr = bksmt_int_init_lst(y->num, y->size/2, y->sign);  
 
     /* first and third terms of ks product, xl*yl and xr*yr */
-    p1 = ks_muls(xl, yl); 
-    p3 = ks_muls(xr, yr); 
+
+
+    p1 = ks_mul(xl, yl); 
+    p3 = ks_mul(xr, yr); 
 
     /* second term is (xl + xr)*(yl+yr) - p1 - p3, so requires four intermediary operations */
     i1 = bksmt_int_add(xl,xr);
     i2 = bksmt_int_add(yl,yr);
-    i3 = ks_muls(i1, i2);
+    i3 = ks_mul(i1, i2);
     i4 = bksmt_int_sub(i3, p1);
     p2 = bksmt_int_sub(i4, p3);
 
     /* shift and add terms, ret = (p1 << size) + (p2 << size/2) + p3 */
-    i5 = bksmt_int_lshift(p1, nsize);
-    i6 = bksmt_int_lshift(p2, nsize/2);
+    i5 = bksmt_int_lshift(p1, nsize * BKSMT_INT_SL_BIT_MAX);
+    i6 = bksmt_int_lshift(p2, (nsize/2) * BKSMT_INT_SL_BIT_MAX);
     i7 = bksmt_int_add(i5, i6);
     ret = bksmt_int_add(i7, p3);
-
+ 
     /* determine sign, if sign(x) = sign(y), sign(xy) = 1 else sign(xy) = 0 */
-    ret->sign = (x->sign = y->sign) ? BKSMT_INT_POS : BKSMT_INT_NEG;
+    ret->sign = x->sign * y->sign;
 
     /* check for extraneous zeros */
     shrink_num(ret);
     shrink_num(x);
     shrink_num(y);
+
 
     /* graveyard */
     bksmt_int_free(xl);
@@ -531,7 +555,6 @@ ks_muls(struct bksmt_int *x, struct bksmt_int *y)
     bksmt_int_free(yr);
     bksmt_int_free(p1);
     bksmt_int_free(p2);
-    bksmt_int_free(p3);
     bksmt_int_free(p3);
     bksmt_int_free(i1);
     bksmt_int_free(i2);
@@ -559,3 +582,29 @@ bksmt_int_free(struct bksmt_int *i1)
     free(i1->num);
     free(i1);
 }
+
+
+static 
+void debug_print_int(struct bksmt_int *i) 
+{
+    int j;    
+
+    fprintf(stderr, "-------------------------------------\n");
+    fprintf(stderr, "printing num:\n");
+
+    fprintf(stderr, "sign: ");
+    if (i->sign == BKSMT_INT_POS)
+        fprintf(stderr, "+\n");
+    else 
+        fprintf(stderr, "-\n");
+
+    fprintf(stderr, "size: %d\n", i->size);
+    fprintf(stderr, "num: \n");
+
+    for(j = i->size - 1; j >= 0; j--) 
+        fprintf(stderr, "%" PRIu64 "\n", i->num[j]);
+
+    fprintf(stderr, "-------------------------------------\n");
+}
+
+
